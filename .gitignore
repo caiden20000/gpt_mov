@@ -1,6 +1,6 @@
 images/**.png
 audio/**.mp3
 output/**.mp4
-keys/**
+keys/**.txt
 __pycache__
 previous_subjects.txt
