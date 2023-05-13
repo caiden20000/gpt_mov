@@ -45,11 +45,5 @@ def overlay_on_bg(clip, bg_num):
 def overlay_captions(script, clip):
     pass
 
-# src = generate_n_ia_tuples(15)
-# ia_tuple_arr_to_videofile(src, "output/output.mp4")
-
-# o1 = add_static_image_to_audio("i1.jpg", "a1.wav", "o1.mp4")
-# o2 = add_static_image_to_audio("i2.jpg", "a2.wav", "o2.mp4")
-
 output = overlay_on_bg(VideoFileClip("output/1-sneeze.mp4"), 1)
 output.write_videofile("output.mp4")

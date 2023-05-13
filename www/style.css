@@ -1,0 +1,50 @@
+body {
+    background: #222;
+    color: white;
+    font-family: 'Instrument Sans', sans-serif;
+}
+
+.segment {
+    display: flex;
+    flex-direction: row;
+}
+
+.segment-element-container {
+    display: flex;
+    flex-direction: column;
+}
+
+div.segment-container-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+select.segment-version {
+    background: #DDD;
+    font-weight: bold;
+    font-size: 15px;
+}
+
+button.segment-reload {
+    width: 25px;
+    height: 25px;
+    text-align: center;
+    justify-content: center;
+    border-radius: 50px;
+    border: none;
+    background: #DDD;
+}
+
+button>img {
+    width: 20px;
+    position: relative;
+    top: 2px;
+    left: -4px;
+}
+
+button.segment-reload:hover {
+    background: #FFF;
+}
