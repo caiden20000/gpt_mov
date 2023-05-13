@@ -4,3 +4,4 @@ output/**.mp4
 keys/**.txt
 __pycache__
 previous_subjects.txt
+bg/**

@@ -80,8 +80,15 @@ if __name__ == '__main__':
 script = gpt(prompt)
 if (script == False):
     raise Exception('GPT failed to generate script.')
-# Should have every sentence on a new line.
-# Iterate over each line:
+
+# Generate images and audio
 ia_arr = get_resources(script)
-ia_tuple_arr_to_videofile(ia_arr, f"output/{project_name}.mp4")
+# Combine images and audio
+clip = ia_tuple_arr_to_videoclip(ia_arr)
+# Overlay the generated video onto ADHD background for TikTok / YT Shorts
+clip = overlay_on_bg(clip, 1)
+# Export video
+clip.write_videofile(f"output/{project_name}.mp4")
+
+# When auto generating, don't cover the same subject twice.
 add_latest_subject(script)
