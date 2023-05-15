@@ -29,6 +29,39 @@ def add_latest_subject(script):
     with open('previous_subjects.txt', 'a+') as f:
         f.write(subject + '\n')
 
+
+def download_image_from_text(text, filepath):
+    img = dalle(get_image_description(text), filepath)
+    return img
+
+def download_audio_from_text(text, filepath):
+    audio = tts(voices['Antoni'], text, filepath)
+    return audio
+
+def regenerate_sentence(script, sentence):
+    subprompt = 'Here is the entire script for context: \n'
+    subprompt += script + "\n\n"
+    subprompt += 'With that script in mind, re-word or rephrase this sentence from the script: \n'
+    subprompt += f"\"{sentence}\"\n\n"
+    subprompt += 'Only return the new rephrased sentence. Do not return the entire script.'
+    return gpt(subprompt)
+
+def generate_sentence_between(script, prev_sentence, next_sentence):
+    subprompt = 'Here is the entire script for context: \n'
+    subprompt += script + "\n\n"
+    subprompt += 'With that script in mind, write a new sentence that will go between these two sentences: \n'
+    subprompt += f"\"{prev_sentence}\"\n"
+    subprompt += f"<Your new sentence here>"
+    subprompt += f"\"{next_sentence}\"\n"
+    subprompt += 'Only return the new sentence. Do not return the entire script.'
+    return gpt(subprompt)
+
+def generate_segment(text, filename):
+    img = download_image_from_text(text, filename + '.png')
+    audio = download_audio_from_text(text, filename + '.mp3')
+    return (img, audio)
+
+
 def get_resources(script):
     ia_arr = []
     ia_count = 0
@@ -50,45 +83,45 @@ def get_resources(script):
         ia_arr.append((img, audio))
     return ia_arr
 
-# Load default prompt from prompt.txt
-# Prompt contains basic info, ie "Write a script..."
-prompt = ''
-with open('prompt.txt+', 'r') as f:
-    prompt = f.read()
+# # Load default prompt from prompt.txt
+# # Prompt contains basic info, ie "Write a script..."
+# prompt = ''
+# with open('prompt.txt+', 'r') as f:
+#     prompt = f.read()
 
-# Get cli args
-project_name = ''
-custom_subject = ''
-# if main, read first arg as project name
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) > 1:
-        project_name = sys.argv[1]
-    else:
-        raise Exception('No project name provided.')
-    if len(sys.argv) > 2:
-        # set custom_subject to a string of all argv after the first
-        custom_subject = ' '.join(sys.argv[2:])
-        print("Custom subject specified!")
-        prompt += "\n Write the script about " + custom_subject + "."
-    else:
-        print("No custom subject specified.")
-        prompt += "\n" + get_previous_subjects()
-        prompt += "Write the script about any subject not already covered."
+# # Get cli args
+# project_name = ''
+# custom_subject = ''
+# # if main, read first arg as project name
+# if __name__ == '__main__':
+#     import sys
+#     if len(sys.argv) > 1:
+#         project_name = sys.argv[1]
+#     else:
+#         raise Exception('No project name provided.')
+#     if len(sys.argv) > 2:
+#         # set custom_subject to a string of all argv after the first
+#         custom_subject = ' '.join(sys.argv[2:])
+#         print("Custom subject specified!")
+#         prompt += "\n Write the script about " + custom_subject + "."
+#     else:
+#         print("No custom subject specified.")
+#         prompt += "\n" + get_previous_subjects()
+#         prompt += "Write the script about any subject not already covered."
 
-# Generate the video file
-script = gpt(prompt)
-if (script == False):
-    raise Exception('GPT failed to generate script.')
+# # Generate the video file
+# script = gpt(prompt)
+# if (script == False):
+#     raise Exception('GPT failed to generate script.')
 
-# Generate images and audio
-ia_arr = get_resources(script)
-# Combine images and audio
-clip = ia_tuple_arr_to_videoclip(ia_arr)
-# Overlay the generated video onto ADHD background for TikTok / YT Shorts
-clip = overlay_on_bg(clip, 1)
-# Export video
-clip.write_videofile(f"output/{project_name}.mp4")
+# # Generate images and audio
+# ia_arr = get_resources(script)
+# # Combine images and audio
+# clip = ia_tuple_arr_to_videoclip(ia_arr)
+# # Overlay the generated video onto ADHD background for TikTok / YT Shorts
+# clip = overlay_on_bg(clip, 1)
+# # Export video
+# clip.write_videofile(f"output/{project_name}.mp4")
 
-# When auto generating, don't cover the same subject twice.
-add_latest_subject(script)
+# # When auto generating, don't cover the same subject twice.
+# add_latest_subject(script)
