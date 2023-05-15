@@ -56,6 +56,20 @@ def generate_sentence_between(script, prev_sentence, next_sentence):
     subprompt += 'Only return the new sentence. Do not return the entire script.'
     return gpt(subprompt)
 
+def generate_sentence_at_beginning(script):
+    subprompt = 'Here is the entire script for context: \n'
+    subprompt += script + "\n\n"
+    subprompt += 'With that script in mind, write a new sentence that will naturally go at the beginning of the script. \n'
+    subprompt += 'Only return the new sentence. Do not return the entire script.'
+    return gpt(subprompt)
+
+def generate_sentence_at_end(script):
+    subprompt = 'Here is the entire script for context: \n'
+    subprompt += script + "\n\n"
+    subprompt += 'With that script in mind, write a new sentence that will naturally go at the end of the script. \n'
+    subprompt += 'Only return the new sentence. Do not return the entire script.'
+    return gpt(subprompt)
+
 def generate_segment(text, filename):
     img = download_image_from_text(text, filename + '.png')
     audio = download_audio_from_text(text, filename + '.mp3')

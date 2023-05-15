@@ -5,14 +5,6 @@ from gpt import *
 
 eel.init('www', allowed_extensions=['.js'])
 
-@eel.expose
-def test_hello(attr):
-    print(f'Hello from {attr}!')
-
-eel.test_hello_js("Python test")
-
-eel.start('index.html')
-
 class Segment:
     def __init__(self, text, name):
         self.text = [text]
@@ -49,6 +41,7 @@ class Segment:
 
 # ordered list of segments
 project_name = ""
+script = ""
 sequence = []
 
 @eel.expose
@@ -58,13 +51,22 @@ def generate_sequence(prompt, project_name):
         if line in ['', '\n']: continue
         seg = Segment(line, f'{project_name}_seg{len(sequence)}')
         sequence.append(seg)
+    eel.refresh_sequence()
 
 @eel.expose
 def get_sequence_length():
     return len(sequence)
 
+@eel.expose
 def add_segment(index):
-    sequence.insert(index, Segment("",f'{project_name}_seg{len(sequence)}'))
+    text = ""
+    if index <= 0:
+        text = generate_sentence_at_beginning(script)
+    elif index >= len(sequence)-1:
+        text = generate_sentence_at_end(script)
+    else:
+        text = generate_sentence_between(script, sequence[index-1].get_text(), sequence[index+1].get_text())
+    sequence.insert(index, Segment(text,f'{project_name}_seg{len(sequence)}'))
 
 @eel.expose
 def get_segment(num):
@@ -123,3 +125,6 @@ def change_segment_audio_ver(num):
 def change_segment_text_ver(num):
     get_segment(num).text_ver = num
     return get_segment_text(num)
+
+
+eel.start('index.html')
