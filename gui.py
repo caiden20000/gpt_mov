@@ -17,10 +17,10 @@ class Segment:
         self.text_ver = 0
     
     def get_img(self):
-        return self.img[self.img_ver]
+        return self.img[self.img_ver][4:] # www/
     
     def get_audio(self):
-        return self.audio[self.audio_ver]
+        return self.audio[self.audio_ver][4:] # www/
     
     def get_text(self):
         return self.text[self.text_ver]
@@ -43,15 +43,26 @@ class Segment:
 project_name = ""
 script = ""
 sequence = []
+default_prompt = ""
+with open('prompt.txt', 'r') as f:
+    default_prompt = f.read()
 
+# Issue: EEL doesn't serve resources until this function exits
+# So resources populate at once. How to thread it?
 @eel.expose
-def generate_sequence(prompt, project_name):
+def generate_sequence(project_name, prompt=default_prompt):
     script = gpt(prompt)
     for line in script.splitlines():
         if line in ['', '\n']: continue
         seg = Segment(line, f'{project_name}_seg{len(sequence)}')
         sequence.append(seg)
+        eel.append_segment(seg.get_img(), seg.get_audio(), seg.get_text())
     eel.refresh_sequence()
+
+@eel.expose
+def generate_sequence_thread(project_name):
+    # no worky
+    eel.spawn(lambda : generate_sequence(project_name))
 
 @eel.expose
 def get_sequence_length():
@@ -68,9 +79,13 @@ def add_segment(index):
         text = generate_sentence_between(script, sequence[index-1].get_text(), sequence[index+1].get_text())
     sequence.insert(index, Segment(text,f'{project_name}_seg{len(sequence)}'))
 
-@eel.expose
 def get_segment(num):
     return sequence[num]
+
+@eel.expose
+def get_segment_as_arr(num):
+    seg = get_segment(num)
+    return [seg.get_img(), seg.get_audio(), seg.get_text()]
 
 @eel.expose
 def get_segment_img(num):

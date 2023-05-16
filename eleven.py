@@ -34,7 +34,7 @@ def tts(voiceID, text, filename):
         }
     }
     response = requests.post(ttsURL + voiceID, headers=headers, json=data)
-    filepath = "audio/" + filename + '.mp3'
+    filepath = "www/audio/" + filename + '.mp3'
     with open(filepath, 'wb') as f:
         for chunk in response.iter_content(chunk_size=1024):
             if chunk:

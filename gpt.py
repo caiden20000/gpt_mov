@@ -8,7 +8,7 @@ with open('keys/openaikey.txt', 'r+') as f:
     openaikey = f.readline().strip()
 
 models = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
-use_model = models[1]
+use_model = models[0]
 
 # Makes a request to the OpenAI API
 # Uses headers:
@@ -56,8 +56,8 @@ def dalle(prompt, filename):
     response = requests.post(dalleurl, headers=headers, json=request)
     if response.ok:
         url = response.json()["data"][0]['url']
-        filepath = "images/" + filename + ".png"
-        download_image(url, "images/" + filename + ".png")
+        filepath = "www/images/" + filename + ".png"
+        download_image(url, "www/images/" + filename + ".png")
         return filepath
     else:
         print('Error: ' + response.text)

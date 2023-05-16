@@ -34,7 +34,7 @@ def ia_tuple_arr_to_videoclip(ia_tuple_array, output_path):
 def generate_n_ia_tuples(n):
     ia_tuple_array = []
     for i in range(n):
-        ia_tuple_array.append((f"images/{i+1}.jpg", f"audio/{i+1}.wav"))
+        ia_tuple_array.append((f"www/images/{i+1}.jpg", f"www/audio/{i+1}.wav"))
     return ia_tuple_array
 
 def overlay_on_bg(clip, bg_num):
@@ -45,5 +45,5 @@ def overlay_on_bg(clip, bg_num):
 def overlay_captions(script, clip):
     pass
 
-output = overlay_on_bg(VideoFileClip("output/1-sneeze.mp4"), 1)
-output.write_videofile("output.mp4")
+# output = overlay_on_bg(VideoFileClip("output/1-sneeze.mp4"), 1)
+# output.write_videofile("output.mp4")
