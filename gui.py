@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import eel
+import multiprocessing
 from main import *
 from gpt import *
 
@@ -47,22 +48,29 @@ default_prompt = ""
 with open('prompt.txt', 'r') as f:
     default_prompt = f.read()
 
+
+def append_to_sequence(segment):
+    sequence.append(segment)
+    eel.append_segment(segment.get_img(), segment.get_audio(), segment.get_text())
+
 # Issue: EEL doesn't serve resources until this function exits
 # So resources populate at once. How to thread it?
 @eel.expose
-def generate_sequence(project_name, prompt=default_prompt):
+def generate_sequence(append_func, project_name, prompt=default_prompt):
     script = gpt(prompt)
     for line in script.splitlines():
         if line in ['', '\n']: continue
         seg = Segment(line, f'{project_name}_seg{len(sequence)}')
-        sequence.append(seg)
-        eel.append_segment(seg.get_img(), seg.get_audio(), seg.get_text())
+        append_func(seg)
+        # sequence.append(seg)
+        # eel.append_segment(seg.get_img(), seg.get_audio(), seg.get_text())
     eel.refresh_sequence()
 
 @eel.expose
 def generate_sequence_thread(project_name):
-    # no worky
-    eel.spawn(lambda : generate_sequence(project_name))
+    append_func = multiprocessing.Value('P', append_to_sequence)
+    process = multiprocessing.Process(target=generate_sequence, args=(append_func, project_name))
+    process.start()
 
 @eel.expose
 def get_sequence_length():
