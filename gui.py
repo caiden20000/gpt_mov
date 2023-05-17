@@ -3,6 +3,30 @@ import eel
 import multiprocessing
 from main import *
 from gpt import *
+'''
+Problem: The API calls are synchronous, and the local server resources are not served until the function exits.
+Solution: Asynchronous code.
+Methods:
+    - Multiprocessing
+        - I don't see a way to async share data through the processes.
+            Every method I see of passing data between processes makes it synchronous.
+            (queue.get() waits, pipe.recv() waits, etc.)
+        - What are pools?
+    - Asyncio
+        - I would have to convert all API calls to async, in each file.
+            The receiving of the data would still be synchronous, I think.
+            Think about await, all that.
+The way I'm seeing it:
+    1. Break up all the script sentences into segments.
+    2. For each segment, generate the resources in a separate process.
+    3. When the resources are generated, the process has a callback I think? This is the shaky step.
+    4. The callback adds the image and audio to the segment.
+    5. 
+
+
+
+
+'''
 
 eel.init('www', allowed_extensions=['.js'])
 
