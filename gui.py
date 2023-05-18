@@ -9,42 +9,26 @@ import async_api
 import aiohttp
 import main
 
-'''
-Problem: The API calls are synchronous, and the local server resources are not served until the function exits.
-Solution: Asynchronous code.
-Methods:
-    - Multiprocessing
-        - I don't see a way to async share data through the processes.
-            Every method I see of passing data between processes makes it synchronous.
-            (queue.get() waits, pipe.recv() waits, etc.)
-        - What are pools?
-    - Asyncio
-        - I would have to convert all API calls to async, in each file.
-            The receiving of the data would still be synchronous, I think.
-            Think about await, all that.
-The way I'm seeing it:
-    1. Break up all the script sentences into segments.
-    2. For each segment, generate the resources in a separate process.
-    3. When the resources are generated, the process has a callback I think? This is the shaky step.
-    4. The callback adds the image and audio to the segment.
-    5. 
-
-async api_call(callback):
-    data = await request(...)
-    callback(data)
-
-def append_to_sequence(segment, index):
-    sequence.insert(index, segment)
-
-# index is important because it's asynchronous
-api_call(lambda data: append_to_sequence(Segment(data), index))
-
-# with a Segment containing __init__(self, img, text, audio, name)
-def generate_sequence(prompt):
-    script = await gpt(prompt)
-    
-    I implemented async, but it turns out eel doesn't support it...
-
+f'''
+EEL obviously won't work, as gevent is too cumbersome for async code.
+We need to develop for client-server already.
+Sever-side:
+    - HTTP(s)
+        - Flask or Django
+    - API calls
+        - API keys have to be safely stored
+    - Database
+        - Store users
+            - Usernames, passwords, IDs, API keys, encrypted?
+            - Project data: images, text, audio, video
+            - Obligatory project saving system :(
+    - Downloading and storing data into database
+    - The only reason we need to download server-side is to generate the video file.
+Client-side:
+    - Download image and audio from server
+    - Request changes
+    - Display image and audio
+    - Download and display video
 '''
 
 eel.init('www', allowed_extensions=['.js'])
