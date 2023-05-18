@@ -26,6 +26,7 @@ def get_previous_subjects():
 
 def add_latest_subject(script):
     subject = get_script_subject(script)
+    if subject == None: return
     with open('previous_subjects.txt', 'a+') as f:
         f.write(subject + '\n')
 
@@ -76,7 +77,7 @@ def generate_segment(text, filename):
     return (img, audio)
 
 
-def get_resources(script):
+def get_resources(script, project_name):
     ia_arr = []
     ia_count = 0
     # split lines by period

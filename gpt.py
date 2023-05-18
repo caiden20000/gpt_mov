@@ -86,6 +86,7 @@ async def async_gpt(session, prompt):
         return response.json()['choices'][0]['message']['content']
     else:
         print('Error: ' + response.text)
+        return False
 
 async def async_download_image(session, url, filename):
     print("Downloading image...")

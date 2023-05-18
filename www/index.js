@@ -20,8 +20,8 @@ function initialize_template() {
 }
 initialize_template();
 
-function generate_sequence() {
-    eel.generate_sequence("test_js");
+async function generate_sequence() {
+    await eel.ags("test_js");
 }
 
 // Called automatically after generate_sequence populates
@@ -36,6 +36,7 @@ function clear_sequence() {
 
 function make_segment(img, audio, text) {
     let new_segment_element = segment_template.cloneNode(true);
+    if (img == false) img = "img/placeholder.png";
     new_segment_element.querySelector(".segment-img-src").src = img;
     new_segment_element.querySelector("source").src = audio;
     new_segment_element.querySelector(".segment-text").value = text;
