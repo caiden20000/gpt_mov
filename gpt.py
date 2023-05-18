@@ -51,7 +51,7 @@ def download_image(url, filename) -> str | bool:
         return False
 
 # Returns a string on success, False on failure
-def dalle(prompt, filename) -> str | bool:
+def dalle(prompt, filepath) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
@@ -62,8 +62,7 @@ def dalle(prompt, filename) -> str | bool:
     response = requests.post(dalleurl, headers=headers, json=request)
     if response.ok:
         url = response.json()["data"][0]['url']
-        filepath = "www/images/" + filename + ".png"
-        img_succ = download_image(url, "www/images/" + filename + ".png")
+        img_succ = download_image(url, filepath + ".png")
         return filepath if img_succ else False
     else:
         print('Error: ' + response.text)
@@ -109,7 +108,7 @@ async def async_download_image(session, url, filename) -> str | bool:
         return False
 
 # Returns a string on success, False on failure
-async def async_dalle(session, prompt, filename) -> str | bool:
+async def async_dalle(session, prompt, filepath) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
@@ -121,8 +120,7 @@ async def async_dalle(session, prompt, filename) -> str | bool:
     response = await async_api.send_post_request(session, dalleurl, headers, request)
     if response.ok:
         url = response.json()["data"][0]['url']
-        filepath = "www/images/" + filename + ".png"
-        img_succ = await async_download_image(session, url, "www/images/" + filename + ".png")
+        img_succ = await async_download_image(session, url, filepath + ".png")
         return filepath if img_succ else False
     else:
         print('Error: ' + response.text)

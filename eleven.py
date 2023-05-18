@@ -22,7 +22,7 @@ def request_voice_list() -> str | bool:
         return False
 
 # Returns a string on success, False on failure
-def tts(voiceID, text, filename) -> str | bool:
+def tts(voiceID, text, filepath) -> str | bool:
     print("Fetching tts...")
     headers = {
         "Accept": "audio/mpeg",
@@ -38,7 +38,7 @@ def tts(voiceID, text, filename) -> str | bool:
     }
     response = requests.post(ttsURL + voiceID, headers=headers, json=data)
     if response.ok:
-        filepath = "www/audio/" + filename + '.mp3'
+        filepath = filepath + '.mp3'
         with open(filepath, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
@@ -97,7 +97,7 @@ async def async_request_voice_list(session) -> str | bool:
         return False
 
 # Returns a string on success, False on failure
-async def async_tts(session, voiceID, text, filename) -> str | bool:
+async def async_tts(session, voiceID, text, filepath) -> str | bool:
     print("Fetching tts...")
     headers = {
         "Accept": "audio/mpeg",
@@ -114,7 +114,7 @@ async def async_tts(session, voiceID, text, filename) -> str | bool:
     # response = requests.post(ttsURL + voiceID, headers=headers, json=data)
     response = await async_api.send_post_request(session, ttsURL + voiceID, headers, data)
     if response.ok:
-        filepath = "www/audio/" + filename + '.mp3'
+        filepath = filepath + '.mp3'
         with open(filepath, 'wb') as f:
             for chunk in response.iter_content(chunk_size=1024):
                 if chunk:
