@@ -1,5 +1,19 @@
+import aiohttp
 import gpt
 import eleven
+import moviepy.editor as mov
+
+import json
+
+prompts = {}
+try:
+    with open('prompts.json', 'r') as f:
+        prompts = json.load(f)
+except FileNotFoundError:
+    print("File not found error: prompts.json")
+except json.JSONDecodeError:
+    print("JSON parse error: prompts.json")
+    
 
 class Segment:
     def __init__(self, name):
@@ -51,7 +65,7 @@ class Segment:
     
     async def new_image(self, image_prompt=None):
         new_version = len(self.image_list)
-        image_prompt = image_prompt or self.get_current_text()  # Replace with image prompt generator
+        image_prompt = image_prompt or await gpt.async_gpt(self.session, prompts['get_image_description'] + self.get_current_text())
         image_filepath = await gpt.async_dalle(self.session, image_prompt, self.path(new_version))
         if type(image_filepath) == str:
             self.image_list.append(image_filepath)
@@ -71,9 +85,14 @@ class Segment:
         else:
             return False
     
-    async def new_text(self, text_prompt=None):
+    async def new_text(self, script=None, text_prompt=None):
         new_version = len(self.text_list)
-        text_prompt = text_prompt or self.get_current_text()    # Replace with text prompt generator
+        if text_prompt is None:
+            text_prompt = prompts['regenerate_sentence'][0]
+            text_prompt += script
+            text_prompt += prompts['regenerate_sentence'][1]
+            text_prompt += self.get_current_text()
+            text_prompt += prompts['regenerate_sentence'][2]
         text = await gpt.async_gpt(self.session, text_prompt)
         if type(text) == str:
             self.text_list.append(text)
@@ -95,5 +114,78 @@ class Segment:
         
 
 class Sequence:
-    pass
+    def __init__(self, project_name):
+        self.name = project_name
+        self.segments: list[Segment] = []
+        self.session = aiohttp.ClientSession()
+    
+    async def close_session(self):
+        await self.session.close()
+    
+    def seg_name(self, segment_number):
+        return self.name + "_" + str(segment_number)
+    
+    # Warning: Resets sequence before generating
+    async def generate_sequence(self, script):
+        self.segments = []
+        line_number = 0
+        for line in script.splitlines():
+            if line in ['', '\n']: continue
+            seg = Segment(self.seg_name(line_number))
+            await seg.init(self.session, line)
+            self.add_segment(seg)
+            line_number += 1
+    
+    def add_segment(self, segment):
+        self.segments.append(segment)
+     
+    def insert_segment(self, segment, index):
+        self.segments.insert(index, segment)
+        
+    async def generate_insert_segment(self, script, index):
+        text_prompt = ''
+        if not (0 <= index < len(self.segments)): return False
+        elif index == 0:    # beginning
+            text_prompt = prompts['generate_sentence_at_beginning'][0]
+            text_prompt += script
+            text_prompt = prompts['generate_sentence_at_beginning'][1]
+        elif index == len(self.segments)-1:    # end
+            text_prompt = prompts['generate_sentence_at_end'][0]
+            text_prompt += script
+            text_prompt = prompts['generate_sentence_at_end'][1]
+        else:   # between
+            text_prompt = prompts['generate_sentence_between'][0]
+            text_prompt += script
+            text_prompt += prompts['generate_sentence_between'][1]
+            text_prompt += self.segments[index-1].get_current_text()
+            text_prompt += prompts['generate_sentence_between'][2]
+            text_prompt += self.segments[index+1].get_current_text()
+            text_prompt += prompts['generate_sentence_between'][3]
+        seg = Segment(self.seg_name(index))
+        await seg.init(self.session, text_prompt)
+        self.insert_segment(seg, index);
+    
+    def remove_segment(self, index):
+        self.segments.pop(index)
+    
+    def get_segment(self, index):
+        return self.segments[index]
 
+    def compile_script(self):
+        script = ''
+        for seg in self.segments:
+            script += seg.get_current_text()
+            script += '\n'
+        return script
+
+    def export_video(self, filepath):
+        clips = []
+        for seg in self.segments:
+            audio_clip = mov.AudioFileClip(seg.get_current_audio())
+            image_clip = mov.ImageClip(seg.get_current_image())
+            video_clip = image_clip.set_audio(audio_clip)
+            video_clip.duration = audio_clip.duration
+            video_clip.fps = 5
+            clips.append(video_clip)
+        final_clip = mov.concatenate_videoclips(clips, method='compose')
+        final_clip.write_videofile(filepath + ".mp4")
