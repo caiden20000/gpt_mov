@@ -23,8 +23,20 @@ The way I'm seeing it:
     4. The callback adds the image and audio to the segment.
     5. 
 
+async api_call(callback):
+    data = await request(...)
+    callback(data)
 
+def append_to_sequence(segment, index):
+    sequence.insert(index, segment)
 
+# index is important because it's asynchronous
+api_call(lambda data: append_to_sequence(Segment(data), index))
+
+# with a Segment containing __init__(self, img, text, audio, name)
+def generate_sequence(prompt):
+    script = await gpt(prompt)
+    
 
 '''
 

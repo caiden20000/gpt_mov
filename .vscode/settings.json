@@ -1,0 +1,24 @@
+{
+    "files.associations": {
+        "logging.h": "c",
+        "util.h": "c",
+        "sigaction.h": "c",
+        "signal.h": "c",
+        "sigset_t.h": "c",
+        "parse.h": "c",
+        "anav.h": "c"
+    },
+
+    // Made with Monokai Vibrant theme selected
+    "workbench.colorCustomizations": {
+        "editor.background": "#000000",
+        "sideBar.background": "#191e29",
+        "activityBar.background": "#161825",
+        "statusBar.background": "#161825",
+        "editorGroupHeader.tabsBackground": "#191e29",
+        "tab.inactiveBackground": "#161825",
+        "tab.activeBackground": "#202328",
+
+        "titleBar.activeBackground": "#161825"
+    }
+}
