@@ -15,7 +15,8 @@ use_model = models[0]
 # Uses headers:
 #   Authorization": "Bearer " + openaikey,
 #   "Content-Type": "application/json"
-def gpt(prompt):
+# Returns a string on success, False on failure
+def gpt(prompt) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "model": use_model,
@@ -33,8 +34,10 @@ def gpt(prompt):
         return response.json()['choices'][0]['message']['content']
     else:
         print('Error: ' + response.text)
+        return False
 
-def download_image(url, filename):
+# Returns a string on success, False on failure
+def download_image(url, filename) -> str | bool:
     print("Downloading image...")
     response = requests.get(url)
     if response.ok:
@@ -42,11 +45,13 @@ def download_image(url, filename):
         with open(filename, 'wb') as file:
             file.write(response.content)
             print('File saved successfully.')
+        return filename
     else:
         print('Error: ' + response.text)
         return False
 
-def dalle(prompt, filename):
+# Returns a string on success, False on failure
+def dalle(prompt, filename) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
@@ -58,16 +63,16 @@ def dalle(prompt, filename):
     if response.ok:
         url = response.json()["data"][0]['url']
         filepath = "www/images/" + filename + ".png"
-        download_image(url, "www/images/" + filename + ".png")
-        return filepath
+        img_succ = download_image(url, "www/images/" + filename + ".png")
+        return filepath if img_succ else False
     else:
         print('Error: ' + response.text)
         return False
 
 # Async versions below
 
-
-async def async_gpt(session, prompt):
+# Returns a string on success, False on failure
+async def async_gpt(session, prompt) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "model": use_model,
@@ -88,7 +93,8 @@ async def async_gpt(session, prompt):
         print('Error: ' + response.text)
         return False
 
-async def async_download_image(session, url, filename):
+# Returns a string on success, False on failure
+async def async_download_image(session, url, filename) -> str | bool:
     print("Downloading image...")
     # response = requests.get(url)
     response = await async_api.send_get_request(session, url)
@@ -102,7 +108,8 @@ async def async_download_image(session, url, filename):
         print('Error: ' + response.text)
         return False
 
-async def async_dalle(session, prompt, filename):
+# Returns a string on success, False on failure
+async def async_dalle(session, prompt, filename) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
@@ -115,7 +122,7 @@ async def async_dalle(session, prompt, filename):
     if response.ok:
         url = response.json()["data"][0]['url']
         filepath = "www/images/" + filename + ".png"
-        img_succ = download_image(url, "www/images/" + filename + ".png")
+        img_succ = await async_download_image(session, url, "www/images/" + filename + ".png")
         return filepath if img_succ else False
     else:
         print('Error: ' + response.text)
