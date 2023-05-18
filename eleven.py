@@ -1,4 +1,5 @@
 import requests
+import async_api
 
 voicesURL = 'https://api.elevenlabs.io/v1/voices'
 ttsURL = 'https://api.elevenlabs.io/v1/text-to-speech/'
@@ -72,37 +73,41 @@ def generate_test_list():
     for voice in voices.items():
         tts(voice[1], "Hello! This is a test.", "audio/" + voice[0])
 
-# generate_test_list()
-# tts(voices['Luddy'], "BOYS! Today, the plan is simple.", "audio/test")
 
+# Async below
 
-# interface Sample {
-#     sample_id: string;
-#     file_name: string;
-#     mime_type: string;
-#     size_bytes: number;
-#     hash: string;
-# }
+async def async_request_voice_list(session):
+    headers = {
+        'Content-Type': 'application/json',
+        'xi-api-key': elevenkey
+    }
+    # response = requests.get(voicesURL, headers=headers)
+    response = await async_api.send_get_request(session, voicesURL, headers)
+    if response.ok:
+        return response.json()['voices']
+    else:
+        return 'Error: ' + response.text
 
-# interface VoiceSettings {
-#     stabilit: number;
-#     similarity_boost: number;
-# }
-
-# interface Voice {
-#     voice_id: string;
-#     name: string;
-#     samples: Sample[];
-#     category: string;
-#     fine_tuning: any;
-#     labels: {[key: string]: string};
-#     description: string;
-#     preview_url: string;
-#     available_for_tiers: string[];
-#     settings: VoiceSettings;
-# }
-
-# interface VoiceRequest {
-#     text: string;
-#     voice_settings: VoiceSettings;
-# }
+async def async_tts(session, voiceID, text, filename):
+    print("Fetching tts...")
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        'xi-api-key': elevenkey
+    }
+    data = {
+        "text": text,
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0
+        }
+    }
+    # response = requests.post(ttsURL + voiceID, headers=headers, json=data)
+    response = await async_api.send_post_request(session, ttsURL + voiceID, headers, data)
+    filepath = "www/audio/" + filename + '.mp3'
+    with open(filepath, 'wb') as f:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    print("File created! (?) " + filepath)
+    return filepath

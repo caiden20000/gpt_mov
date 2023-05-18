@@ -1,4 +1,5 @@
 import requests
+import async_api
 
 gpturl = 'https://api.openai.com/v1/chat/completions'
 dalleurl = 'https://api.openai.com/v1/images/generations'
@@ -63,5 +64,58 @@ def dalle(prompt, filename):
         print('Error: ' + response.text)
         return False
 
-# dalle("a seal on a bed", "seal2")
-# print(gpt('This is a test. If you are receiving this message, then the GPT-3 API is working.'))
+# Async versions below
+
+
+async def async_gpt(session, prompt):
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
+    request = {
+        "model": use_model,
+        "messages": [
+            {
+                "role": "system",
+                "content": prompt
+            }
+        ]
+    }
+    print("Sending GPT request...")
+    #response = requests.post(gpturl, headers=headers, json=request)
+    response = await async_api.send_post_request(session, gpturl, headers, request)
+    if response.ok:
+        print("Got GPT response!")
+        return response.json()['choices'][0]['message']['content']
+    else:
+        print('Error: ' + response.text)
+
+async def async_download_image(session, url, filename):
+    print("Downloading image...")
+    # response = requests.get(url)
+    response = await async_api.send_get_request(session, url)
+    if response.ok:
+        print("Response OK! Writing to file " + filename + "...")
+        with open(filename, 'wb') as file:
+            file.write(response.content)
+            print('File saved successfully.')
+        return filename
+    else:
+        print('Error: ' + response.text)
+        return False
+
+async def async_dalle(session, prompt, filename):
+    headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
+    request = {
+        "prompt": prompt,
+        "n": 1,
+        "size": "1024x1024" #256x256, 512x512, or 1024x1024
+    }
+    print(f"Getting DALL-E image from prompt: {prompt}")
+    # response = requests.post(dalleurl, headers=headers, json=request)
+    response = await async_api.send_post_request(session, dalleurl, headers, request)
+    if response.ok:
+        url = response.json()["data"][0]['url']
+        filepath = "www/images/" + filename + ".png"
+        img_succ = download_image(url, "www/images/" + filename + ".png")
+        return filepath if img_succ else False
+    else:
+        print('Error: ' + response.text)
+        return False
