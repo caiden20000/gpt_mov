@@ -183,7 +183,7 @@ class Sequence:
         return self.name + "_" + str(segment_number)
     
     async def generate_script_from_subject(self, subject=None):
-        prompt = prompts['script_prompt'][0]
+        prompt = prompts['script_prompt']
         if subject is not None: prompt += "\nWrite the script about " + subject
         return await gpt.async_gpt(self.session, prompt)
 
