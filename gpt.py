@@ -1,5 +1,6 @@
 import requests
 import async_api
+import aiohttp
 
 gpturl = 'https://api.openai.com/v1/chat/completions'
 dalleurl = 'https://api.openai.com/v1/images/generations'
@@ -62,7 +63,8 @@ def dalle(prompt, filepath) -> str | bool:
     response = requests.post(dalleurl, headers=headers, json=request)
     if response.ok:
         url = response.json()["data"][0]['url']
-        img_succ = download_image(url, filepath + ".png")
+        filepath = filepath + ".png"
+        img_succ = download_image(url, filepath)
         return filepath if img_succ else False
     else:
         print('Error: ' + response.text)
@@ -83,29 +85,27 @@ async def async_gpt(session, prompt) -> str | bool:
         ]
     }
     print("Sending GPT request...")
-    #response = requests.post(gpturl, headers=headers, json=request)
-    response = await async_api.send_post_request(session, gpturl, headers, request)
-    if response.ok:
-        print("Got GPT response!")
-        return response.json()['choices'][0]['message']['content']
-    else:
-        print('Error: ' + response.text)
-        return False
+    async with session.post(gpturl, headers=headers, json=request) as response:
+        if response.ok:
+            print("Got GPT response!")
+            return (await response.json())['choices'][0]['message']['content']
+        else:
+            print('GPT Request Error: ' + await response.text())
+            return False
 
 # Returns a string on success, False on failure
 async def async_download_image(session, url, filename) -> str | bool:
     print("Downloading image...")
-    # response = requests.get(url)
-    response = await async_api.send_get_request(session, url)
-    if response.ok:
-        print("Response OK! Writing to file " + filename + "...")
-        with open(filename, 'wb') as file:
-            file.write(response.content)
-            print('File saved successfully.')
-        return filename
-    else:
-        print('Error: ' + response.text)
-        return False
+    async with session.get(url) as response:
+        if response.ok:
+            print("Response OK! Writing to file " + filename + "...")
+            with open(filename, 'wb') as file:
+                file.write(await response.read())
+                print('File saved successfully.')
+            return filename
+        else:
+            print('Download Image Error: ' + await response.text())
+            return False
 
 # Returns a string on success, False on failure
 async def async_dalle(session, prompt, filepath) -> str | bool:
@@ -116,12 +116,12 @@ async def async_dalle(session, prompt, filepath) -> str | bool:
         "size": "1024x1024" #256x256, 512x512, or 1024x1024
     }
     print(f"Getting DALL-E image from prompt: {prompt}")
-    # response = requests.post(dalleurl, headers=headers, json=request)
-    response = await async_api.send_post_request(session, dalleurl, headers, request)
-    if response.ok:
-        url = response.json()["data"][0]['url']
-        img_succ = await async_download_image(session, url, filepath + ".png")
-        return filepath if img_succ else False
-    else:
-        print('Error: ' + response.text)
-        return False
+    async with session.post(dalleurl, headers=headers, json=request) as response:
+        if response.ok:
+            url = (await response.json())["data"][0]['url']
+            filepath = filepath + ".png"
+            img_succ = await async_download_image(session, url, filepath)
+            return filepath if img_succ else False
+        else:
+            print('DALL-E Request Error: ' + await response.text())
+            return False

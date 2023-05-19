@@ -1,5 +1,6 @@
 {
-    "script_prompt": "Generate a script for a short, 50 second pop science video. Only write the parts spoken out loud. Seperate every sentence with a new line. The script should start with the words \"Have you ever wondered [...]?\"\nDo not add any descriptors to the script, no title, no roles. Make sure all text within your response is to be spoken out loud.",
+    "script_prompt": "Generate a script for a short, 50 second pop science video. Only write the parts spoken out loud. Seperate every sentence with a new line. The script should start with the words \"Have you ever wondered [...]?\"\nDo not add any descriptors to the script, no title, no roles. Make sure all text within your response is to be spoken out loud. ABSOLUTELY DO _NOT_ LABEL THINGS LIKE NARRATOR, SPEAKER, MUSIC, OR CHARACTERS. ONLY WRITE THE WORDS THAT ARE MEANT TO BE SPOKEN OUT LOUD. \n\n",
+    "alterate_script_prompt": "Generate a short engaging pop science article. It should take about a minute to read out loud. Put every sentence on a new line. \n\n",
     "regenerate_sentence": [
         "Here is the entire script for context: \n",
         "\n\nWith that script in mind, re-word or rephrase this sentence from the script: \n",

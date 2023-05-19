@@ -89,12 +89,12 @@ async def async_request_voice_list(session) -> str | bool:
         'xi-api-key': elevenkey
     }
     # response = requests.get(voicesURL, headers=headers)
-    response = await async_api.send_get_request(session, voicesURL, headers)
-    if response.ok:
-        return response.json()['voices']
-    else:
-        print('Error: ' + response.text)
-        return False
+    async with session.get(voicesURL, headers=headers) as response:
+        if response.ok:
+            return (await response.json())['voices']
+        else:
+            print('Error: ' + await response.text())
+            return False
 
 # Returns a string on success, False on failure
 async def async_tts(session, voiceID, text, filepath) -> str | bool:
@@ -111,16 +111,27 @@ async def async_tts(session, voiceID, text, filepath) -> str | bool:
             "similarity_boost": 0
         }
     }
-    # response = requests.post(ttsURL + voiceID, headers=headers, json=data)
-    response = await async_api.send_post_request(session, ttsURL + voiceID, headers, data)
-    if response.ok:
-        filepath = filepath + '.mp3'
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
+    async with session.post(ttsURL + voiceID, headers=headers, json=data) as response:
+        if response.ok:
+            filepath = filepath + '.mp3'
+            with open(filepath, 'wb') as f:
+                async for chunk in response.content.iter_chunked(4096):
                     f.write(chunk)
-        print("File created! (?) " + filepath)
-        return filepath
-    else:
-        print('Error: ' + response.text)
-        return False
+            print("File created! (?) " + filepath)
+            return filepath
+        else:
+            print('TTS Error: ' + await response.text())
+            return False
+
+
+# Quick test
+
+# import aiohttp
+# import asyncio
+# async def main():
+#     async with aiohttp.ClientSession() as session:
+#         await async_tts(session, voices["Antoni"], "Hello! This is not a test, funny guy.", "audio/test_download")
+
+# if __name__ == "__main__":
+#     import asyncio
+#     asyncio.run(main())
