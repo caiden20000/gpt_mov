@@ -280,7 +280,7 @@ class Sequence:
 async def main():
     seq = Sequence("seq-test");
     await seq.open_session()
-    await seq.generate_sequence_from_subject("rainbows")
+    await seq.generate_sequence_from_subject("lettuce")
     seq.export_video("seq-test")
     await seq.close_session()
 
