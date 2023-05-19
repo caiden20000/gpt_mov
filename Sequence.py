@@ -8,6 +8,14 @@ import json
 image_path = 'images/'
 audio_path = 'audio/'
 output_path = 'output/'
+
+current_eleven_requests = 0 # max 3 concurrent
+max_concurrent_eleven_requests = 3
+current_gpt_requests = 0 # max 10? concurrent
+max_concurrent_gpt_requests = 5
+current_dalle_requests = 0 # max 10? concurrent
+max_concurrent_dalle_requests = 5
+
 prompts = {}
 try:
     with open('prompts.json', 'r') as f:
@@ -16,7 +24,45 @@ except FileNotFoundError:
     print("File not found error: prompts.json")
 except json.JSONDecodeError:
     print("JSON parse error: prompts.json")
-    
+
+async def wait_for_eleven_concurrency():
+    while current_eleven_requests >= max_concurrent_eleven_requests:
+        await asyncio.sleep(1)
+    return
+
+async def wait_for_gpt_concurrency():
+    while current_gpt_requests >= max_concurrent_gpt_requests:
+        await asyncio.sleep(1)
+    return
+
+async def wait_for_dalle_concurrency():
+    while current_dalle_requests >= max_concurrent_dalle_requests:
+        await asyncio.sleep(1)
+    return
+
+async def concurrent_tts(session, voiceID, text, filepath):
+    global current_eleven_requests
+    await wait_for_eleven_concurrency()
+    current_eleven_requests += 1
+    result = await eleven.async_tts(session, voiceID, text, filepath)
+    current_eleven_requests -= 1
+    return result
+
+async def concurrent_dalle(session, prompt, filepath):
+    global current_dalle_requests
+    await wait_for_dalle_concurrency()
+    current_dalle_requests += 1
+    result = await gpt.async_dalle(session, prompt, filepath)
+    current_dalle_requests -= 1
+    return result
+
+async def concurrent_gpt(session, prompt):
+    global current_gpt_requests
+    await wait_for_gpt_concurrency()
+    current_gpt_requests += 1
+    result = await gpt.async_gpt(session, prompt)
+    current_gpt_requests -= 1
+    return result
 
 class Segment:
     def __init__(self, name):
@@ -33,8 +79,9 @@ class Segment:
         self.session = session
         self.text_list.append(text)
         self.text_version = 0
-        await self.new_image()
-        await self.new_audio()
+        await asyncio.gather(self.new_image(), self.new_audio())
+        # await self.new_image()
+        # await self.new_audio()
     
     def path(self, ver):
         return self.name + "_" + str(ver)
@@ -71,8 +118,8 @@ class Segment:
     
     async def new_image(self, image_prompt=None):
         new_version = len(self.image_list)
-        image_prompt = image_prompt or await gpt.async_gpt(self.session, prompts['get_image_description'] + self.get_current_text())
-        image_filepath = await gpt.async_dalle(self.session, image_prompt, image_path + self.path(new_version))
+        image_prompt = image_prompt or await concurrent_gpt(self.session, prompts['get_image_description'] + self.get_current_text())
+        image_filepath = await concurrent_dalle(self.session, image_prompt, image_path + self.path(new_version))
         if type(image_filepath) == str:
             self.image_list.append(image_filepath)
             self.image_version = new_version
@@ -83,7 +130,7 @@ class Segment:
     async def new_audio(self, audio_prompt=None):
         new_version = len(self.audio_list)
         audio_prompt = audio_prompt or self.get_current_text()
-        audio_filepath = await eleven.async_tts(self.session, eleven.voices['Antoni'], audio_prompt, audio_path + self.path(new_version))
+        audio_filepath = await concurrent_tts(self.session, eleven.voices['Antoni'], audio_prompt, audio_path + self.path(new_version))
         if type(audio_filepath) == str:
             self.audio_list.append(audio_filepath)
             self.audio_version = new_version
@@ -99,7 +146,7 @@ class Segment:
             text_prompt += prompts['regenerate_sentence'][1]
             text_prompt += self.get_current_text()
             text_prompt += prompts['regenerate_sentence'][2]
-        text = await gpt.async_gpt(self.session, text_prompt)
+        text = await concurrent_gpt(self.session, text_prompt)
         if type(text) == str:
             self.text_list.append(text)
             self.text_version = new_version
@@ -135,7 +182,7 @@ class Sequence:
         return self.name + "_" + str(segment_number)
     
     async def generate_script_from_subject(self, subject=None):
-        prompt = prompts['alterate_script_prompt'][0]
+        prompt = prompts['script_prompt'][0]
         if subject is not None: prompt += "\nWrite the script about " + subject
         return await gpt.async_gpt(self.session, prompt)
 
@@ -148,12 +195,14 @@ class Sequence:
     async def generate_sequence(self, script: str):
         self.segments = []
         line_number = 0
+        coroutines = []
         for line in script.splitlines():
             if line in ['', '\n']: continue
             seg = Segment(self.seg_name(line_number))
-            await seg.init(self.session, line)
+            coroutines.append(seg.init(self.session, line))
             self.add_segment(seg)
             line_number += 1
+        await asyncio.gather(*coroutines)
     
     def add_segment(self, segment):
         self.segments.append(segment)
