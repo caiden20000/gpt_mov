@@ -12,9 +12,9 @@ output_path = 'output/'
 current_eleven_requests = 0 # max 3 concurrent
 max_concurrent_eleven_requests = 3
 current_gpt_requests = 0 # max 10? concurrent
-max_concurrent_gpt_requests = 5
+max_concurrent_gpt_requests = 3
 current_dalle_requests = 0 # max 10? concurrent
-max_concurrent_dalle_requests = 5
+max_concurrent_dalle_requests = 3
 
 prompts = {}
 try:
@@ -119,6 +119,7 @@ class Segment:
     async def new_image(self, image_prompt=None):
         new_version = len(self.image_list)
         image_prompt = image_prompt or await concurrent_gpt(self.session, prompts['get_image_description'] + self.get_current_text())
+        image_prompt = image_prompt or self.get_current_text()
         image_filepath = await concurrent_dalle(self.session, image_prompt, image_path + self.path(new_version))
         if type(image_filepath) == str:
             self.image_list.append(image_filepath)
@@ -279,7 +280,7 @@ class Sequence:
 async def main():
     seq = Sequence("seq-test");
     await seq.open_session()
-    await seq.generate_sequence_from_subject("dogs")
+    await seq.generate_sequence_from_subject("rainbows")
     seq.export_video("seq-test")
     await seq.close_session()
 

@@ -1,5 +1,4 @@
 import requests
-import async_api
 
 voicesURL = 'https://api.elevenlabs.io/v1/voices'
 ttsURL = 'https://api.elevenlabs.io/v1/text-to-speech/'

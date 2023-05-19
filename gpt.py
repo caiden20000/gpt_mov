@@ -1,6 +1,4 @@
 import requests
-import async_api
-import aiohttp
 
 gpturl = 'https://api.openai.com/v1/chat/completions'
 dalleurl = 'https://api.openai.com/v1/images/generations'
@@ -52,7 +50,7 @@ def download_image(url, filename) -> str | bool:
         return False
 
 # Returns a string on success, False on failure
-def dalle(prompt, filepath) -> str | bool:
+def dalle(prompt: str, filepath) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
@@ -90,6 +88,10 @@ async def async_gpt(session, prompt) -> str | bool:
             print("Got GPT response!")
             return (await response.json())['choices'][0]['message']['content']
         else:
+            error = await response.text()
+            # Recurse if failed due to external issue.
+            if "That model is currently overloaded with other requests" in error["error"]["message"]:
+                return await async_gpt(session, prompt)
             print('GPT Request Error: ' + await response.text())
             return False
 
@@ -108,7 +110,7 @@ async def async_download_image(session, url, filename) -> str | bool:
             return False
 
 # Returns a string on success, False on failure
-async def async_dalle(session, prompt, filepath) -> str | bool:
+async def async_dalle(session, prompt: str, filepath) -> str | bool:
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "prompt": prompt,
