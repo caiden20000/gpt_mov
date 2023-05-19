@@ -5,3 +5,4 @@ keys/**.txt
 __pycache__
 previous_subjects.txt
 bg/**
+.venv/**
