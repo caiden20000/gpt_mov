@@ -65,8 +65,9 @@ async def concurrent_gpt(session, prompt):
     return result
 
 class Segment:
-    def __init__(self, name):
+    def __init__(self, index, name):
         self.name = name
+        self.index = index;
         self.image_list: list[str] = []
         self.text_list: list[str] = []
         self.audio_list: list[str] = []
@@ -164,6 +165,24 @@ class Segment:
             "text": self.text_list[tv],
             "audio": self.audio_list[av]
         }
+    
+    def jsonify(self):
+        return_object = {
+            "index": self.index,
+            "images": {
+                "list": self.image_list,
+                "current_version": self.image_version
+            },
+            "text": {
+                "list": self.text_list,
+                "current_version": self.text_version
+            },
+            "audio": {
+                "list": self.audio_list,
+                "current_version": self.audio_version
+            }
+        }
+        return return_object
         
         
 
@@ -199,17 +218,24 @@ class Sequence:
         coroutines = []
         for line in script.splitlines():
             if line in ['', '\n']: continue
-            seg = Segment(self.seg_name(line_number))
+            seg = Segment(line_number, self.seg_name(line_number))
             coroutines.append(seg.init(self.session, line))
             self.add_segment(seg)
             line_number += 1
         await asyncio.gather(*coroutines)
     
+    def reindex_segments(self):
+        for (i, seg) in enumerate(self.segments):
+            seg.index = i
+    
     def add_segment(self, segment):
         self.segments.append(segment)
+        self.reindex_segments()
      
     def insert_segment(self, segment, index):
         self.segments.insert(index, segment)
+        self.reindex_segments()
+        
         
     async def generate_insert_segment(self, index):
         script = self.compile_script()
@@ -231,7 +257,7 @@ class Sequence:
             text_prompt += prompts['generate_sentence_between'][2]
             text_prompt += self.segments[index+1].get_current_text()
             text_prompt += prompts['generate_sentence_between'][3]
-        seg = Segment(self.seg_name(index))
+        seg = Segment(index, self.seg_name(index))
         await seg.init(self.session, text_prompt)
         self.insert_segment(seg, index);
     

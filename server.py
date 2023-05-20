@@ -21,40 +21,150 @@ App functionalities:
     - Switch between versions of re/generated images, text, or audio in a segment
     - Export a sequence as a video
 
-Client-->Server side functions:
- - Log in
-    - I don't know how logging in works
-    - Probably returns some success/fail and userid or sessionid
- - Manage API keys on your account
-    - Requires secure database
- - Request new project
-    - This is a post request, with the data being the name of the project
-    - This will return the project id -> url
- - Request script
-    - This is a post request, with the data being the requested subject of the script
-    - This will return GPT response
-    - The script is stored under the project id in database
-        - The script stored in the db will be compiled and updated from client segments any time there is a new generation
- - Request segment from text
-    - This is a post request, with the data being the text
-    - This will return a segment JSON object {"id": "id", "image_list": ["url"], "text_list": ["text"], "audio_list": ["url"]}
-    - The image and audio URLs can be used to request the image and audio
-    - The resource URLs will be only whitelisted for that user ID, for privacy
- - Request new segment at index
-    - The request body: {"script": "script", "index": int}
-    - Returns a segment JSON object
- - Request new version of segment element
-    - This is a post request, with a body {"segment_index": int, "text": "text", type: "image|audio|text"}
-    - This will return a segment JSON object with the new version added in.
- - Request video export
-    - This will render and return a URL to the video
-    - The video will be whitelisted to only the user ID
- - 
 
-Server side functions:
+Design for local usage, scale to server usage:
+Local usage:
+    - No log in, no users, still need to manage the one users API keys
+    - Store and name things as if there are multiple users but the current user is called "local"
+    - Database to make it easier to scale up later
+    - Store images and audio as local files to scale up to cloud storage later
+    - Server runs locally, additional py lib will launch browser window for local GUI
+    - Encrypt database when not used so the API keys can't be snatched
 
+Server usage:
+    - Log in, users, manage API keys (how security? :/ )
+    - Whitelisting for resources based on user ID
+    
+    
 
+Schema:
+    - User
+        - ID
+        - Username
+        - Password
+        - API Keys
+        - Project IDs
+    - Project
+        - ID
+        - Script
+        - Sequence
+    - Sequence
+        - ID
+        - Segments
+    - Segment
+        - ID
+        - Index
+        - Text list (text)
+        - Image list (url to png)   # Store as URL because it makes serving easier
+        - Audio list (url to mp3)   # Or, store in database because it makes selective serving easier?
+ 
+ 
+Note: "Segment" object == {
+        "index": int,
+        "images": {
+            "list": ["url"],
+            "current_version": int
+        },
+        "text": {
+            "list": ["text"],
+            "current_version": int
+        },
+        "audio": {
+            "list": ["url"],
+            "current_version": int
+        }
+    }
+    from Segment.jsonify()
+    
+GET /api/users/<user-id>
+    Returns {"projects"}
 
+# Project management
+GET /api/projects/<project-id>
+    Returns {"name": name, "id": id, "script": "script", "sequence": list[Segment]}
+POST /api/projects/
+    Body: {"name": name}
+    Creates a new project/sequence
+    Returns {"name": name, "id": id}
+POST /api/projects/<project-id>
+    Body: {"name": "name" | "", "delete": bool}
+    Rename or delete the project
+    Returns the new project name or None
+GET /api/projects/<project-id>/segments/
+    Returns {"":list[Segment]}
+GET /api/projects/<project-id>/segments/<segment-index>
+    Returns Segment object
+GET /api/projects/<project-id>/segments/<segment-index>/images
+    Returns {"list": ["url"], "current_version": int}
+GET /api/projects/<project-id>/segments/<segment-index>/images/<image-index>
+    Returns the image in .png format
+GET /api/projects/<project-id>/segments/<segment-index>/text
+    Returns {"list": ["text"], "current_version": int}
+GET /api/projects/<project-id>/segments/<segment-index>/text/<text-index>
+    Returns the text in plaintext format (utf-8?)
+GET /api/projects/<project-id>/segments/<segment-index>/audio
+    Returns {"list": ["url"], "current_version": int}
+GET /api/projects/<project-id>/segments/<segment-index>/audio/<audio-index>
+    Returns the audio in .mp3 format
+
+# Script
+GET /api/projects/<project-id>/script
+    Returns the currently stored script
+POST /api/projects/<project-id>/script
+    Body: {"script": "script" | "", "subject": "subject" | ""}
+    If the script is empty, generates a new script from the specified subject
+    If the script and subject are empty, generates a new random script.
+    Returns the new script, and sets it as the project script
+
+# Version generation
+POST /api/projects/<project-id>/segments
+    Body: {"index": int, "text": "text"}
+    Generates a new segment at the specified index with the specified text
+    Consequently may likely change other segment indices
+    Returns the new Segment object
+POST /api/projects/<project-id>/segments/<segment-index>/images
+    Body: {"image": "url" | ""}
+    Replaces or generates a new image version for the specified segment
+    Returns the new image .png
+POST /api/projects/<project-id>/segments/<segment-index>/text
+    Body: {"text": "text" | ""}
+    Replaces or generates a new text version for the specified segment
+    Returns the new text
+POST /api/projects/<project-id>/segments/<segment-index>/audio
+    Body: {"Audio": "url" | ""}
+    Replaces or generates a new audio version for the specified segment
+    Returns the new audio .mp3
+
+# Version changes
+# Should technically be PATCH but I'm unsure of the header considerations
+POST /api/projects/<project-id>/segments/<segment-index>/
+    Body: {"new-index": int}
+    Changes the index of that segment. 
+    new-index < 0 or new-index > len(sequence) will put the segment at the beginning or end of the sequence.
+    Consequently may likely change other segment indices
+    Returns the new Segment object
+POST /api/projects/<project-id>/segments/<segment-index>/images/
+    Body: {"new-version": int}
+    Changes the current selected version of the segment's image
+    version < 0 or version > len(images) will select the first or last version.
+    Returns the new image .png
+POST /api/projects/<project-id>/segments/<segment-index>/text/
+    Body: {"new-version": int}
+    Changes the current selected version of the segment's text
+    version < 0 or version > len(text) will select the first or last version.
+    Returns the new text
+POST /api/projects/<project-id>/segments/<segment-index>/audio/
+    Body: {"new-version": int}
+    Changes the current selected version of the segment's audio
+    version < 0 or version > len(audio) will select the first or last version.
+    Returns the new audio .mp3
+    
+# Exporting
+GET /api/projects/<project-id>/export
+    Returns a URL to the current sequence exported as a video file .mp4
+    # Note: store the exact sequence used to generate the video
+        so that we don't get overloaded by pressing "generate" a lot
+    
 TODO later
     - link audio and text versions, since the text directly represents the audio
     - Let the image be generated by a custom prompt
@@ -66,10 +176,21 @@ TODO later
 # Currently run via
 # python -m flask --app server run
 from flask import Flask
+from flask import request
 from markupsafe import escape # for escaping user input
 
 app = Flask(__name__)
 
-@app.route("/")
-def hello_world():
-    return "<p>Help me, World!</p>"
+# @app.route("/api/projects/<int:project_id>", methods=['GET', 'POST'])
+# def project_root(project_id):
+#     if request.method == "POST":
+#         # In the future, edit name or delete project
+#         return "no"
+#     if request.method == "GET":
+#         return {
+            
+#         }
+
+
+# def get_project(project_id):
+#     pass
