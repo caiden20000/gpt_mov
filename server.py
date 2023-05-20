@@ -1,4 +1,4 @@
-f'''
+'''
 Plan:
 Test serving HTML, CSS, and JS
 Test serving images
@@ -175,11 +175,37 @@ TODO later
 
 # Currently run via
 # python -m flask --app server run
-from flask import Flask
-from flask import request
+# http://127.0.0.1:5000 by default
+from flask import Flask, request, send_file, render_template
 from markupsafe import escape # for escaping user input
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='www')
+
+# Note: Don't include a leading slash on paths, that points to root C:\
+
+# Test returning an image
+# This works!
+@app.route("/test/image")
+def test_image():
+    path = 'images/seq-test_12_0.png'
+    return send_file(path, mimetype='image/png')
+
+# Test returning audio
+# This works!
+@app.route("/test/audio")
+def test_audio():
+    path = 'audio/seq-test_12_0.mp3'
+    return send_file(path, mimetype='audio/mpeg')
+
+# Test POSTing with a body
+# This works!
+@app.route("/test/post", methods=['GET', 'POST'])
+def test_post():
+    if request.method == "GET":
+        return render_template("test.html");
+    data = request.data
+    return f'Received POST request with data: {data}'
+
 
 # @app.route("/api/projects/<int:project_id>", methods=['GET', 'POST'])
 # def project_root(project_id):
