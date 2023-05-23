@@ -43,3 +43,5 @@ Good background videos:
 
 This looks useful:
 https://trenton3983.github.io/files/projects/2019-03-22_intro_to_databases_in_python/2019-02-12_intro_to_databases_in_python.html
+
+https://sqlbolt.com
