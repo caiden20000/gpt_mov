@@ -40,3 +40,6 @@ Notes for me:
 Good background videos: 
  - https://www.pexels.com/search/videos/space%20background%20-boy/
  - https://www.pexels.com/search/videos/video%20background/
+
+This looks useful:
+https://trenton3983.github.io/files/projects/2019-03-22_intro_to_databases_in_python/2019-02-12_intro_to_databases_in_python.html
