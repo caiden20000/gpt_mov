@@ -35,7 +35,19 @@ Server usage:
     - Log in, users, manage API keys (how security? :/ )
     - Whitelisting for resources based on user ID
     
-    
+
+Sequence = {
+    name: str
+    script: str
+    segments: Segment[] = [{
+        text_list: str[]
+        image_list: str[]
+        audio_list: str[]
+        text_version: int
+        image_version: int
+        audio_version: int
+    }, ...]
+}
 
 Schema:
     - User
@@ -43,20 +55,31 @@ Schema:
         - Username
         - Password
         - API Keys
-        - Project IDs
-    - Project
-        - ID
-        - Script
-        - Sequence
     - Sequence
         - ID
+        - User ID
+        - Name
+        - Script
         - Segments
     - Segment
         - ID
+        - Sequence ID
         - Index
-        - Text list (text)
-        - Image list (url to png)   # Store as URL because it makes serving easier
-        - Audio list (url to mp3)   # Or, store in database because it makes selective serving easier?
+    - Text
+        - ID
+        - Segment ID
+        - Version       (text_list index)
+        - Text content
+    - Image
+        - ID
+        - Segment ID
+        - Version       (image_list index)
+        - Image path    (to png)
+    - Audio
+        - ID
+        - Segment ID
+        - Version       (audio_list index)
+        - Audio path    (to mp3)
  
  
 Note: "Segment" object == {
