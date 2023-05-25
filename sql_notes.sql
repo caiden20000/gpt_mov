@@ -5,7 +5,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE IF NOT EXISTS user (
 	id INTEGER NOT NULL,
-	name TEXT UNIQUE,
+	username TEXT UNIQUE COLLATE NOCASE,
 	password TEXT, 					-- Password will be hashed or something, idk
 	PRIMARY KEY (id)
 );
