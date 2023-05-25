@@ -1,65 +1,98 @@
 import sqlite3
 
-# make a database
-con = sqlite3.connect('test_database.db')
+# Initialize the database file
+con = sqlite3.connect('database.db')
 cur = con.cursor()
 
-# Test schema
-cur.execute('''
-PRAGMA foreign_keys = ON;
-''')
+# Initialize tables (if not exists)
+def init_database():
+    cur.execute('PRAGMA foreign_keys = ON;')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS user (
+                    id INTEGER NOT NULL,
+                    username TEXT UNIQUE,
+                    password TEXT,
+                    PRIMARY KEY (id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS api_keys (
+                    id INTEGER NOT NULL,
+                    openai TEXT,
+                    elevenlabs TEXT,
+                    PRIMARY KEY (id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS sequence (
+                    id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    name TEXT NOT NULL,
+                    script TEXT,
+                    PRIMARY KEY (id),
+                    FOREIGN KEY (user_id) REFERENCES users(id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS segment (
+                    id INTEGER NOT NULL,
+                    sequence_id INTEGER NOT NULL,
+                    index INTEGER NOT NULL,
+                    text_version INTEGER,
+                    image_version INTEGER,
+                    audio_version INTEGER,
+                    PRIMARY KEY (id),
+                    FOREIGN KEY (sequence_id) REFERENCES sequence(id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS segment_text (
+                    segment_id INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL,
+                    FOREIGN KEY (segment_id) REFERENCES segment(id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS segment_image (
+                    segment_id INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL,
+                    FOREIGN KEY (segment_id) REFERENCES segment(id)
+                );
+                ''')
+    cur.execute('''
+                CREATE TABLE IF NOT EXISTS segment_audio (
+                    segment_id INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    version INTEGER NOT NULL,
+                    FOREIGN KEY (segment_id) REFERENCES segment(id)
+                );
+                ''')
 
-cur.execute('''
-CREATE TABLE IF NOT EXISTS user (
-    id INTEGER,
-    username TEXT,
-    password TEXT,
-    PRIMARY KEY (id)
-);
-''')
 
-cur.execute('''
-CREATE TABLE IF NOT EXISTS project (
-    id INTEGER,
-    user_id INTEGER,
-    name TEXT,
-    PRIMARY KEY (id),
-    FOREIGN KEY (user_id) REFERENCES user(id)
-);
-''')
+def get_username_from_user_id(user_id):
+    ret = cur.execute('''
+                       SELECT username FROM user
+                       WHERE id = ?
+                       ''', (user_id))
+    return ret.fetchall() 
 
-def add_user(username, password):
-    cur.execute("INSERT INTO user (username, password) VALUES (?, ?)", (username, password))
-    con.commit()
+def get_user_id_from_username(username):
+    ret = cur.execute('''
+                       SELECT id FROM user
+                       WHERE username = ?
+                       ''', (username))
+    return ret.fetchall()[0]
 
-def add_project(user_id, name):
-    cur.execute("INSERT INTO project (user_id, name) VALUES (?, ?)", (user_id, name))
-    con.commit()
+def get_sequence_names_by_user_id(user_id):
+    ret = cur.execute('''
+                       SELECT name FROM sequence
+                       WHERE user_id = ?
+                       ''', (user_id))
+    return ret.fetchall()
 
-def print_user_table():
-    res = cur.execute("SELECT * FROM user")
-    for row in res:
-        print(row)
 
-def print_project_table():
-    res = cur.execute("SELECT * FROM project")
-    for row in res:
-        print(row)
 
-def print_projects():
-    res = cur.execute("SELECT name, username FROM project INNER JOIN user ON user_id = user.id")
-    for row in res:
-        print(row)
-    
-
-# add_user("ChigChungos", "passwd1")
-# add_project(2, "test projenct")
-# add_project(3, "proj1")
-# add_project(3, "new projeect 1")
-print_user_table()
-print("\n")
-print_project_table()
-print("\n")
-print_projects()
 
 
