@@ -40,7 +40,7 @@ Sequence = {
     name: str
     script: str
     segments: Segment[] = [{
-        text_list: str[]
+        text_list: str[]    
         image_list: str[]
         audio_list: str[]
         text_version: int
