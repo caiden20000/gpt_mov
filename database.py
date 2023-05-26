@@ -13,7 +13,7 @@ def init_database():
     cur.executescript(script)
     con.commit()
 
-# Straight up delete this function before production
+# TODO: Straight up, PLEASE delete this function before production
 def clear_database():
     cur.execute("DROP TABLE users;")
     cur.execute("DROP TABLE api_keys;")
@@ -42,29 +42,46 @@ def add_user(username: str, password: str) -> bool:
         return False
     return True
 
+def add_sequence(user_id: int, name: str) -> bool:
+    try:
+        cur.execute('''
+                    INSERT INTO sequences (user_id, name)
+                    VALUES (?, ?)
+                    ''', (user_id, name))
+    except Exception as e:
+        print("Error: " + str(e))
+        return False
+    return True
 
 def get_username_from_user_id(user_id):
     ret = cur.execute('''
-                       SELECT username FROM user
+                       SELECT username FROM users
                        WHERE id = ?;
-                       ''', (user_id))
-    return ret.fetchall() 
+                       ''', (user_id,))
+    return ret.fetchall()[0][0]
 
 def get_user_id_from_username(username):
     ret = cur.execute('''
-                       SELECT id FROM user
+                       SELECT id FROM users
                        WHERE username = ?
-                       ''', (username))
-    return ret.fetchall()[0]
+                       ''', (username.lower(),))
+    return ret.fetchall()[0][0]
 
 def get_sequence_names_by_user_id(user_id):
     ret = cur.execute('''
-                       SELECT name FROM sequence
+                       SELECT name FROM sequences
                        WHERE user_id = ?
-                       ''', (user_id))
-    return ret.fetchall()
+                       ''', (user_id,))
+    return [n[0] for n in ret.fetchall()]
 
 
 
 init_database()
 
+print(add_user("Caiden2000", "password123"))
+uid = get_user_id_from_username("Caiden2000")
+add_sequence(uid, "project1")
+add_sequence(uid, "project2")
+add_sequence(uid, "da_prOjeckt thr33")
+
+print(get_sequence_names_by_user_id(uid))
