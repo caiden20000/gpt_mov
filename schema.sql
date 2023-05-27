@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS api_keys (
 	id INTEGER PRIMARY KEY,
 	user_id INTEGER NOT NULL REFERENCES users(id),
-	openai TEXT,					-- Should hash API keys too or..?
-	elevenlabs TEXT
+	name TEXT NOT NULL,					-- API key name eg: "openai" or "elevenlabs"
+	key_str TEXT NOT NULL				-- Should hash API keys too or..?
 );
 
 CREATE TABLE IF NOT EXISTS sequences (
