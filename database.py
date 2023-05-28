@@ -209,4 +209,86 @@ def get_sequence_element(element: Element, sequence_id: int, sequence_index: int
     return ret.fetchall()[0][0]
 
 
+def add_user(username) -> int:
+    pass
+# Returns the new sequence ID
+def add_sequence(sequence_name, user_id) -> int:
+    pass
+# Modifies key if already exists
+# Returns true if successful
+def add_api_key(user_id: int, type: string, key: string) -> bool:
+    pass
+
+# If index < 0, segment is added to the beginning of the sequence
+# If index > max, segment is added to the end of the sequence
+# All versions start at 0, meaning NO version.
+# Function will ++ all >= indices to insert.
+# sequence_index unspecified will add to the end of the sequence.
+# Returns new segment ID
+def add_segment(sequence_id, sequence_index = -1) -> int:
+    pass
+
+# Setting "switch" to true will automatically select this new version in the segment.
+# Returns the version assigned.
+def add_segment_element(segment_id: int, element: Element, content: str, switch: bool = False) -> int:
+    pass
+
+
+### Modify functions
+
+# Returns true if successful
+def change_username(user_id) -> bool:
+    pass
+# Returns true if successful
+def change_sequence_name(sequence_id) -> bool:
+    pass
+
+# Returns the new index, or false if unsucessful
+def change_segment_index(segment_id, new_index) -> int | bool:
+    pass
+
+### Get functions
+# All get functions will return false if the entry doesn't exist.
+def get_id_from_username(username: str) -> int | bool:
+    pass
+def get_username_from_id(user_id: int) -> str | bool:
+    pass
+
+def get_api_key(user_id: int, type: str) -> str | bool:
+    pass
+
+def get_sequences(user_id: int) -> Sequence[]:
+    pass
+def get_sequence(sequence_id: int) -> Sequence:
+    pass
+
+def get_segment(segment_id: int) -> Segment:
+    pass
+def get_segment_element(segment_id: int, element: Element, version: int = -1) -> str:
+    pass
+
+def get_segment_count(sequence_id: int) -> int:
+    pass
+def get_segment_element_version_count(segment_id: int, element: Element) -> int:
+    pass
+
+
+
+# Existential functions
+
+def does_username_exist(username: str) -> bool:
+    pass
+def does_user_id_exist(user_id: int) -> bool:
+    pass
+def does_sequence_name_exist(user_id, sequence_name: str) -> bool:
+    pass
+def does_sequence_id_exist(sequence_id: int) -> bool:
+    pass
+def does_segment_id_exist(segment_id: int) -> bool:
+    pass
+def does_sequence_index_exist(sequence_id: int, sequence_index: int) -> bool:
+    pass
+def does_segment_element_version_exist(sequence_id: int, element: Element, version: int) -> bool:
+    pass
+
 init_database()
