@@ -4,7 +4,7 @@ Interface:
 ### Add functions
 
 # Returns new user ID
-add_user(username) -> int
+add_user(username, password) -> int
 # Returns the new sequence ID
 add_sequence(sequence_name, user_id) -> int
 # Modifies key if already exists
@@ -107,8 +107,8 @@ class Segment:
 
 
 # Initialize the database file
-con = sqlite3.connect('database.db')
-cur = con.cursor()
+connection = sqlite3.connect('database.db')
+cursor = connection.cursor()
 
 # Initialize tables (if not exists)
 # Executes the schema.sql file
@@ -116,69 +116,69 @@ def init_database():
     script = None;
     with open('schema.sql', 'r') as file:
         script = file.read()
-    cur.executescript(script)
-    con.commit()
+    cursor.executescript(script)
+    connection.commit()
 
 # TODO: Straight up, PLEASE delete this function before production
 def clear_database():
-    cur.execute("DROP TABLE users;")
-    cur.execute("DROP TABLE api_keys;")
-    cur.execute("DROP TABLE sequences;")
-    cur.execute("DROP TABLE segments;")
-    cur.execute("DROP TABLE segment_text;")
-    cur.execute("DROP TABLE segment_image;")
-    cur.execute("DROP TABLE segment_audio;")
+    cursor.execute("DROP TABLE users;")
+    cursor.execute("DROP TABLE api_keys;")
+    cursor.execute("DROP TABLE sequences;")
+    cursor.execute("DROP TABLE segments;")
+    cursor.execute("DROP TABLE segment_text;")
+    cursor.execute("DROP TABLE segment_image;")
+    cursor.execute("DROP TABLE segment_audio;")
 
 # TODO: hashing
 def secure_password(username: str , password: str) -> str:
     return password
 
-# Returns true if username is inserted successfully (ie. username is unique)
-def add_user(username: str, password: str) -> bool:
-    try:
-        cur.execute('''
-                    INSERT INTO users (username, username_case, password)
-                    VALUES (?, ?, ?);
-                    ''', (username.lower(), username, secure_password(username, password)))
-        con.commit()
-    except sqlite3.IntegrityError:
-        return False
-    except Exception as e:
-        print("Error: " + str(e))
-        return False
-    return True
+# # Returns true if username is inserted successfully (ie. username is unique)
+# def add_user(username: str, password: str) -> bool:
+#     try:
+#         cursor.execute('''
+#                     INSERT INTO users (username, username_case, password)
+#                     VALUES (?, ?, ?);
+#                     ''', (username.lower(), username, secure_password(username, password)))
+#         connection.commit()
+#     except sqlite3.IntegrityError:
+#         return False
+#     except Exception as e:
+#         print("Error: " + str(e))
+#         return False
+#     return True
 
-def add_sequence(user_id: int, name: str) -> bool:
-    try:
-        cur.execute('''
-                    INSERT INTO sequences (user_id, name)
-                    VALUES (?, ?)
-                    ''', (user_id, name))
-    except Exception as e:
-        print("Error: " + str(e))
-        return False
-    return True
+# def add_sequence(user_id: int, name: str) -> bool:
+#     try:
+#         cursor.execute('''
+#                     INSERT INTO sequences (user_id, name)
+#                     VALUES (?, ?)
+#                     ''', (user_id, name))
+#     except Exception as e:
+#         print("Error: " + str(e))
+#         return False
+#     return True
 
-def get_username_from_user_id(user_id):
-    ret = cur.execute('''
-                       SELECT username FROM users
-                       WHERE id = ?;
-                       ''', (user_id,))
-    return ret.fetchall()[0][0]
+# def get_username_from_user_id(user_id):
+#     ret = cursor.execute('''
+#                        SELECT username FROM users
+#                        WHERE id = ?;
+#                        ''', (user_id,))
+#     return ret.fetchall()[0][0]
 
-def get_user_id_from_username(username):
-    ret = cur.execute('''
-                       SELECT id FROM users
-                       WHERE username = ?
-                       ''', (username.lower(),))
-    return ret.fetchall()[0][0]
+# def get_user_id_from_username(username):
+#     ret = cursor.execute('''
+#                        SELECT id FROM users
+#                        WHERE username = ?
+#                        ''', (username.lower(),))
+#     return ret.fetchall()[0][0]
 
-def get_sequences_by_user_id(user_id):
-    ret = cur.execute('''
-                       SELECT id, name FROM sequences
-                       WHERE user_id = ?
-                       ''', (user_id,))
-    return ret.fetchall()
+# def get_sequences_by_user_id(user_id):
+#     ret = cursor.execute('''
+#                        SELECT id, name FROM sequences
+#                        WHERE user_id = ?
+#                        ''', (user_id,))
+#     return ret.fetchall()
 
 from enum import Enum
 class Element(Enum):
@@ -186,10 +186,10 @@ class Element(Enum):
     IMAGE = "image"
     AUDIO = "audio"
 
-def get_sequence_element(element: Element, sequence_id: int, sequence_index: int, version: int = -1):
+def get_segment_element(element: Element, sequence_id: int, sequence_index: int, version: int = -1):
     if version == -1:
         # If version is unspecified, get the version specified in segment.{element}_version
-        ret = cur.execute(f'''
+        ret = cursor.execute(f'''
                         SELECT content FROM sequence_{element}
                         INNER JOIN segments
                             ON segment_id = segments.id
@@ -198,7 +198,7 @@ def get_sequence_element(element: Element, sequence_id: int, sequence_index: int
                             AND version = {element}_version;
                         ''', (sequence_id, sequence_index))
     else:
-        ret = cur.execute(f'''
+        ret = cursor.execute(f'''
                         SELECT content FROM sequence_{element}
                         INNER JOIN segments
                             ON segment_id = segments.id
@@ -209,15 +209,45 @@ def get_sequence_element(element: Element, sequence_id: int, sequence_index: int
     return ret.fetchall()[0][0]
 
 
-def add_user(username) -> int:
-    pass
+### Add functions
+
+# SQL query wrapper that returns false on an integrity error
+def integrity_query(query: str, values: tuple) -> bool:
+    try:
+        cursor.execute(query, values)
+        connection.commit()
+    except sqlite3.IntegrityError:
+        return False
+    return True
+
+# Returns the id of the new user, or 0 if the user already exists.
+# By default, SQLite starts IDs at 1, so a value of 0 is FALSE.
+# TODO: Change the way passwords are stored and/or validated
+def add_user(username, password) -> int:
+    result = integrity_query('''
+                             INSERT INTO users (username, username_case, password)
+                             VALUES (?, ?, ?)
+                             ''', (username.lower(), username, password))
+    return cursor.lastrowid if result and cursor.lastrowid else 0
+
 # Returns the new sequence ID
-def add_sequence(sequence_name, user_id) -> int:
-    pass
+def add_sequence(user_id, sequence_name) -> int:
+    result = integrity_query('''
+                             INSERT INTO sequences (user_id, name)
+                             VALUES (?, ?)
+                             ''', (user_id, sequence_name))
+    return cursor.lastrowid if result and cursor.lastrowid else 0
+
 # Modifies key if already exists
 # Returns true if successful
-def add_api_key(user_id: int, type: string, key: string) -> bool:
-    pass
+def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
+    result = integrity_query('''
+                             INSERT INTO api_keys (user_id, key_type, key_str)
+                             VALUES (?, ?, ?)
+                             ON CONFLICT(user_id, key_type) 
+                             DO UPDATE SET key_str = EXCLUDED.key_str
+                             ''', (user_id, key_type, key_str))
+    return result
 
 # If index < 0, segment is added to the beginning of the sequence
 # If index > max, segment is added to the end of the sequence
