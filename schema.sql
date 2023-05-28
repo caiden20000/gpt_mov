@@ -14,15 +14,17 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS api_keys (
 	id INTEGER PRIMARY KEY,
 	user_id INTEGER NOT NULL REFERENCES users(id),
-	name TEXT NOT NULL,					-- API key name eg: "openai" or "elevenlabs"
-	key_str TEXT NOT NULL				-- Should hash API keys too or..?
+	key_type TEXT NOT NULL,				-- API key name eg: "openai" or "elevenlabs"
+	key_str TEXT NOT NULL,				-- Should hash API keys too or..?
+	UNIQUE(user_id, key_type)			-- A user can only have one key for one service.
 );
 
 CREATE TABLE IF NOT EXISTS sequences (
 	id INTEGER PRIMARY KEY,
 	user_id INTEGER NOT NULL REFERENCES users(id),
-	name TEXT NOT NULL,
-	script TEXT
+	sequence_name TEXT NOT NULL,
+	script TEXT,
+	UNIQUE(user_id, name)				-- A user cannot have two identically named sequences.
 );
 
 CREATE TABLE IF NOT EXISTS segments (
