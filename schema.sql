@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS segments (
 	id INTEGER PRIMARY KEY,
 	sequence_id INTEGER NOT NULL REFERENCES sequences(id),
 	sequence_index INTEGER NOT NULL,			-- index in the sequence
-	text_version INTEGER,
-	image_version INTEGER,
-	audio_version INTEGER
+	text_version INTEGER DEFAULT 0,
+	image_version INTEGER DEFAULT 0,
+	audio_version INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS segment_text (
