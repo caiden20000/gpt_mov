@@ -233,7 +233,7 @@ def add_user(username, password) -> int:
 # Returns the new sequence ID
 def add_sequence(user_id, sequence_name) -> int:
     result = integrity_query('''
-                             INSERT INTO sequences (user_id, name)
+                             INSERT INTO sequences (user_id, sequence_name)
                              VALUES (?, ?)
                              ''', (user_id, sequence_name))
     return cursor.lastrowid if result and cursor.lastrowid else 0
@@ -255,7 +255,19 @@ def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
 # Function will ++ all >= indices to insert.
 # sequence_index unspecified will add to the end of the sequence.
 # Returns new segment ID
-def add_segment(sequence_id, sequence_index = -1) -> int:
+def add_segment(sequence_id, sequence_index = None) -> int:
+    if sequence_index is None:
+        sequence_index = get_segment_count(sequence_id)
+    else:
+        max_index = get_segment_count(sequence_id)
+        if sequence_index >= max_index:
+            sequence_index = max_index
+        elif sequence_index <= 0:
+            sequence_index = 0
+    result = integrity_query('''
+                             INSERT INTO segments (sequence_id, sequence_index)
+                             VALUES (?, ?)
+                             ''', (sequence_id, sequence_index))
     pass
 
 # Setting "switch" to true will automatically select this new version in the segment.
