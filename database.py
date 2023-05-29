@@ -268,14 +268,16 @@ def add_segment(sequence_id, sequence_index = None) -> int:
                              INSERT INTO segments (sequence_id, sequence_index)
                              VALUES (?, ?)
                              ''', (sequence_id, sequence_index))
-    pass
+    return_id = cursor.lastrowid if result and cursor.lastrowid else 0
+    # TODO: increase the indices of all segments >= sequence_index
+    return return_id
+    
 
 # Setting "switch" to true will automatically select this new version in the segment.
 # Returns the version assigned.
 def add_segment_element(segment_id: int, element: Element, content: str, switch: bool = False) -> int:
     pass
-
-
+ 
 ### Modify functions
 
 # Returns true if successful
@@ -285,8 +287,20 @@ def change_username(user_id) -> bool:
 def change_sequence_name(sequence_id) -> bool:
     pass
 
-# Returns the new index, or false if unsucessful
-def change_segment_index(segment_id, new_index) -> int | bool:
+# Returns the new index, or -1 if unsucessful
+def change_segment_index(segment_id, new_index) -> int:
+    result = cursor.execute('''
+                            UPDATE segments
+                            SET sequence_index = ?
+                            WHERE id = ?
+                            ''', (new_index, segment_id))
+    connection.commit()
+    return new_index
+    
+        
+    
+
+def change_segment_element_version(segment_id: int, element: Element, version: int) -> bool:
     pass
 
 ### Get functions
