@@ -108,6 +108,7 @@ class Segment:
 
 # Initialize the database file
 connection = sqlite3.connect('database.db')
+connection.row_factory = sqlite3.Row
 cursor = connection.cursor()
 
 # Initialize tables (if not exists)
@@ -256,20 +257,28 @@ def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
 # sequence_index unspecified will add to the end of the sequence.
 # Returns new segment ID
 def add_segment(sequence_id, sequence_index = None) -> int:
+    max_index = get_segment_count(sequence_id)
     if sequence_index is None:
-        sequence_index = get_segment_count(sequence_id)
+        sequence_index = max_index
     else:
-        max_index = get_segment_count(sequence_id)
         if sequence_index >= max_index:
             sequence_index = max_index
         elif sequence_index <= 0:
             sequence_index = 0
+    if sequence_index == max_index:
+        # Increase the indices of other segments before inserting
+        cursor.execute('''
+                       UPDATE segments
+                       SET sequence_index = sequence_index + 1
+                       WHERE sequence_id = ?
+                           AND sequence_index >= ?;
+                       ''', (sequence_id, sequence_index))
+    # Insertion
     result = integrity_query('''
                              INSERT INTO segments (sequence_id, sequence_index)
-                             VALUES (?, ?)
+                             VALUES (?, ?);
                              ''', (sequence_id, sequence_index))
     return_id = cursor.lastrowid if result and cursor.lastrowid else 0
-    # TODO: increase the indices of all segments >= sequence_index
     return return_id
     
 
@@ -313,21 +322,45 @@ def get_username_from_id(user_id: int) -> str | bool:
 def get_api_key(user_id: int, type: str) -> str | bool:
     pass
 
-def get_sequences(user_id: int) -> Sequence[]:
-    pass
-def get_sequence(sequence_id: int) -> Sequence:
-    pass
+def get_sequences(user_id: int) -> list[Sequence]:
+    result = cursor.execute('''
+                            SELECT * FROM sequence
+                            WHERE user_id = ?;
+                            ''', (user_id,))
+    rows = result.fetchall()
+    return [Sequence(t.id, t.user_id, t.name, t.script) for t in rows]
+    
 
-def get_segment(segment_id: int) -> Segment:
-    pass
+def get_sequence(sequence_id: int) -> Sequence | None:
+    result = cursor.execute('''
+                            SELECT * FROM sequence
+                            WHERE id = ?;
+                            ''', (sequence_id,))
+    t = result.fetchone()
+    if t is None: return None
+    sequence = Sequence(t.id, t.user_id, t.name, t.script)
+    return sequence
+
+def get_segment(segment_id: int) -> Segment | None:
+    result = cursor.execute('''
+                            SELECT * FROM segments
+                            WHERE id = ?;
+                            ''', (segment_id,))
+    t = result.fetchone()
+    if t is None: return None
+    segment = Segment(t.id, t.sequence_id, t.sequence_index,
+                      t.text_version, t.image_version, t.audio_version)
+    return segment
+
 def get_segment_element(segment_id: int, element: Element, version: int = -1) -> str:
     pass
 
 def get_segment_count(sequence_id: int) -> int:
     result = cursor.execute('''
                             SELECT COUNT(*) FROM segments
-                            WHERE sequence_id = ?
+                            WHERE sequence_id = ?;
                             ''')
+    return result.fetchall()[0][0]
     
     
     
