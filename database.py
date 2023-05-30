@@ -324,7 +324,13 @@ def get_segment_element(segment_id: int, element: Element, version: int = -1) ->
     pass
 
 def get_segment_count(sequence_id: int) -> int:
-    pass
+    result = cursor.execute('''
+                            SELECT COUNT(*) FROM segments
+                            WHERE sequence_id = ?
+                            ''')
+    
+    
+    
 def get_segment_element_version_count(segment_id: int, element: Element) -> int:
     pass
 
