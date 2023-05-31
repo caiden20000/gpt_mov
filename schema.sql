@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS sequences (
 	user_id INTEGER NOT NULL REFERENCES users(id),
 	sequence_name TEXT NOT NULL,
 	script TEXT,
-	UNIQUE(user_id, name)				-- A user cannot have two identically named sequences.
+	UNIQUE(user_id, sequence_name)				-- A user cannot have two identically named sequences.
 );
 
 CREATE TABLE IF NOT EXISTS segments (
