@@ -40,17 +40,20 @@ CREATE TABLE IF NOT EXISTS segments (
 CREATE TABLE IF NOT EXISTS segment_text (
 	segment_id INTEGER NOT NULL REFERENCES segments(id),
 	content TEXT NOT NULL,			-- plaintext
-	version INTEGER NOT NULL
+	version INTEGER NOT NULL,
+	UNIQUE(segment_id, version)
 );
 
 CREATE TABLE IF NOT EXISTS segment_image (
 	segment_id INTEGER NOT NULL REFERENCES segments(id),
 	content TEXT NOT NULL,				-- url
-	version INTEGER NOT NULL
+	version INTEGER NOT NULL,
+	UNIQUE(segment_id, version)
 );
 
 CREATE TABLE IF NOT EXISTS segment_audio (
 	segment_id INTEGER NOT NULL REFERENCES segments(id),
 	content TEXT NOT NULL,				-- url
-	version INTEGER NOT NULL
+	version INTEGER NOT NULL,
+	UNIQUE(segment_id, version)
 );
