@@ -1,75 +1,4 @@
 '''
-Interface:
-
-### Add functions
-
-# Returns new user ID
-add_user(username, password) -> int
-# Returns the new sequence ID
-add_sequence(sequence_name, user_id) -> int
-# Modifies key if already exists
-# Returns true if successful
-add_api_key(user_id: int, type: string, key: string) -> bool
-
-# If index < 0, segment is added to the beginning of the sequence
-# If index > max, segment is added to the end of the sequence
-# All versions start at 0, meaning NO version.
-# Function will ++ all >= indices to insert.
-# sequence_index unspecified will add to the end of the sequence.
-# Returns new segment ID
-add_segment(sequence_id, sequence_index = last) -> int
-
-# Setting "switch" to true will automatically select this new version in the segment.
-# Returns the version assigned.
-add_segment_element(segment_id: int, element: Element, content: str, switch: bool = false) -> int
-
-
-### Modify functions
-
-# Returns true if successful
-change_username(user_id) -> bool
-# Returns true if successful
-change_sequence_name(sequence_id) -> bool
-
-# Returns the new index, or false if unsucessful
-change_segment_index(segment_id, new_index) -> int | bool
-
-# No modifying segment elements, all "changes" are new versions.
-# For text, GUI will have a "lock in new version" button after modification
-
-
-### Get functions
-# All get functions will return false if the entry doesn't exist.
-
-get_id_from_username(username: str) -> int | False
-get_username_from_id(user_id: int) -> str | False
-
-get_api_key(user_id: int, type: str) -> str | False
-
-get_sequences(user_id: int) -> Sequence[]
-get_sequence(sequence_id: int) -> Sequence
-
-get_segment(segment_id: int) -> Segment
-get_segment_element(segment_id: int, element: Element, version: int = -1) -> str
-
-get_segment_count(sequence_id: int) -> int
-get_segment_element_version_count(segment_id: int, element: Element) -> int
-
-
-
-# Existential functions
-
-does_username_exist(username: str) -> bool
-does_user_id_exist(user_id: int) -> bool
-
-does_sequence_name_exist(user_id, sequence_name: str) -> bool
-does_sequence_id_exist(sequence_id: int) -> bool
-
-does_segment_id_exist(segment_id: int) -> bool
-does_sequence_index_exist(sequence_id: int, sequence_index: int) -> bool
-
-does_segment_element_version_exist(sequence_id: int, element: Element, version: int) -> bool
-
 
 -- Generate the script for a sequence automatically:
 -- Boy I hope this would work!
@@ -105,6 +34,9 @@ class Segment:
     audio_version: int
 
 from enum import Enum
+# Note: Access the string value with the .value attribute
+# eg Element.TEXT.value
+# Because string casting gives you the enum member name instead...
 class Element(Enum):
     TEXT = "text"
     IMAGE = "image"
@@ -126,66 +58,9 @@ def init_database():
     cursor.executescript(script)
     connection.commit()
 
-# TODO: Straight up, PLEASE delete this function before production
-# def clear_database():
-#     cursor.execute("DROP TABLE users;")
-#     cursor.execute("DROP TABLE api_keys;")
-#     cursor.execute("DROP TABLE sequences;")
-#     cursor.execute("DROP TABLE segments;")
-#     cursor.execute("DROP TABLE segment_text;")
-#     cursor.execute("DROP TABLE segment_image;")
-#     cursor.execute("DROP TABLE segment_audio;")
-
 # TODO: hashing
 def secure_password(username: str , password: str) -> str:
     return password
-
-# # Returns true if username is inserted successfully (ie. username is unique)
-# def add_user(username: str, password: str) -> bool:
-#     try:
-#         cursor.execute('''
-#                     INSERT INTO users (username, username_case, password)
-#                     VALUES (?, ?, ?);
-#                     ''', (username.lower(), username, secure_password(username, password)))
-#         connection.commit()
-#     except sqlite3.IntegrityError:
-#         return False
-#     except Exception as e:
-#         print("Error: " + str(e))
-#         return False
-#     return True
-
-# def add_sequence(user_id: int, name: str) -> bool:
-#     try:
-#         cursor.execute('''
-#                     INSERT INTO sequences (user_id, name)
-#                     VALUES (?, ?)
-#                     ''', (user_id, name))
-#     except Exception as e:
-#         print("Error: " + str(e))
-#         return False
-#     return True
-
-# def get_username_from_user_id(user_id):
-#     ret = cursor.execute('''
-#                        SELECT username FROM users
-#                        WHERE id = ?;
-#                        ''', (user_id,))
-#     return ret.fetchall()[0][0]
-
-# def get_user_id_from_username(username):
-#     ret = cursor.execute('''
-#                        SELECT id FROM users
-#                        WHERE username = ?
-#                        ''', (username.lower(),))
-#     return ret.fetchall()[0][0]
-
-# def get_sequences_by_user_id(user_id):
-#     ret = cursor.execute('''
-#                        SELECT id, name FROM sequences
-#                        WHERE user_id = ?
-#                        ''', (user_id,))
-#     return ret.fetchall()
 
 
 ### Add functions
@@ -208,7 +83,7 @@ def add_user(username, password) -> int:
     """Adds a user to the database. Returns the new user ID."""
     result = integrity_query('''
                              INSERT INTO users (username, username_case, password)
-                             VALUES (?, ?, ?)
+                             VALUES (?, ?, ?);
                              ''', (username.lower(), username, password))
     return cursor.lastrowid if result and cursor.lastrowid else 0
 
@@ -217,7 +92,7 @@ def add_sequence(user_id, sequence_name) -> int:
     """Adds a sequence to the database. Returns the new sequence ID."""
     result = integrity_query('''
                              INSERT INTO sequences (user_id, sequence_name)
-                             VALUES (?, ?)
+                             VALUES (?, ?);
                              ''', (user_id, sequence_name))
     return cursor.lastrowid if result and cursor.lastrowid else 0
 
@@ -229,7 +104,7 @@ def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
                              INSERT INTO api_keys (user_id, key_type, key_str)
                              VALUES (?, ?, ?)
                              ON CONFLICT(user_id, key_type) 
-                             DO UPDATE SET key_str = EXCLUDED.key_str
+                             DO UPDATE SET key_str = EXCLUDED.key_str;
                              ''', (user_id, key_type, key_str))
     return result
 
@@ -268,7 +143,16 @@ def add_segment(sequence_id, sequence_index = None) -> int:
 # Setting "switch" to true will automatically select this new version in the segment.
 # Returns the version assigned.
 def add_segment_element(segment_id: int, element: Element, content: str, switch: bool = False) -> int:
-    pass
+    """Adds a segment element with an incremented version number. Returns the new version number."""
+    next_version = 1 + get_segment_element_version_count(segment_id, element)
+    cursor.execute(f'''
+                   INSERT INTO segment_{element.value}
+                   (segment_id, content, version)
+                   VALUES (?, ?, ?);
+                   ''', (segment_id, content, next_version))
+    if switch:
+        change_segment_element_version(segment_id, element, next_version)
+    return next_version
 
 ### Modify functions
 
@@ -343,7 +227,7 @@ def change_segment_index(segment_id, new_index) -> bool:
     result = cursor.execute('''
                             UPDATE segments
                             SET sequence_index = ?
-                            WHERE id = ?
+                            WHERE id = ?;
                             ''', (new_index, segment_id))
     connection.commit()
     return bool(cursor.rowcount)
@@ -353,7 +237,7 @@ def change_segment_element_version(segment_id: int, element: Element, version: i
     """Changes the active version of a segment element. Returns true if successful."""
     cursor.execute(f'''
                    UPDATE segments
-                   SET {element}_version = ?
+                   SET {element.value}_version = ?
                    WHERE segment_id = ?;
                    ''', (version, segment_id))
     return bool(cursor.rowcount)
@@ -441,17 +325,17 @@ def get_segment_element(segment_id: int, element: Element, version: int = 0) -> 
     """Returns the content of a segment element.
     If version is unspecified, the function will return the version specified by the segment."""
     if version == 0:
-        # If version is unspecified, get the version specified in segment.{element}_version
+        # If version is unspecified, get the version specified in segment.{element.value}_version
         result = cursor.execute(f'''
-                        SELECT content FROM sequence_{element}
+                        SELECT content FROM sequence_{element.value}
                         INNER JOIN segments
                             ON segment_id = segments.id
                         WHERE segment_id = ? 
-                            AND version = {element}_version;
+                            AND version = {element.value}_version;
                         ''', (segment_id,))
     else:
         result = cursor.execute(f'''
-                        SELECT content FROM sequence_{element}
+                        SELECT content FROM sequence_{element.value}
                         INNER JOIN segments
                             ON segment_id = segments.id
                         WHERE segment_id = ? 
@@ -472,7 +356,7 @@ def get_segment_count(sequence_id: int) -> int:
 def get_segment_element_version_count(segment_id: int, element: Element) -> int:
     """Returns the number of versions of a segment element."""
     result = cursor.execute(f'''
-                            SELECT COUNT(*) FROM segment_{element}
+                            SELECT COUNT(*) FROM segment_{element.value}
                             WHERE segment_id = ?;
                             ''', (segment_id,))
     return result.fetchone()[0]
@@ -541,7 +425,7 @@ def does_segment_element_version_exist(segment_id: int, element: Element, versio
     """Returns true if a segment element exists with the specified version.
     Segment element versions begin at 1."""
     result = cursor.execute(f'''
-                            SELECT id FROM segment_{element}
+                            SELECT id FROM segment_{element.value}
                             WHERE segment_id = ?
                                 AND version = ?;
                             ''', (segment_id, version))
