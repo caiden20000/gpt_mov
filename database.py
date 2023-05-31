@@ -119,21 +119,22 @@ cursor = connection.cursor()
 # Initialize tables (if not exists)
 # Executes the schema.sql file
 def init_database():
+    """Initializes the database file from schema.sql"""
     script = None;
-    with open('schema.sql', 'r') as file:
+    with open('schema.sql', 'r', ) as file:
         script = file.read()
     cursor.executescript(script)
     connection.commit()
 
 # TODO: Straight up, PLEASE delete this function before production
-def clear_database():
-    cursor.execute("DROP TABLE users;")
-    cursor.execute("DROP TABLE api_keys;")
-    cursor.execute("DROP TABLE sequences;")
-    cursor.execute("DROP TABLE segments;")
-    cursor.execute("DROP TABLE segment_text;")
-    cursor.execute("DROP TABLE segment_image;")
-    cursor.execute("DROP TABLE segment_audio;")
+# def clear_database():
+#     cursor.execute("DROP TABLE users;")
+#     cursor.execute("DROP TABLE api_keys;")
+#     cursor.execute("DROP TABLE sequences;")
+#     cursor.execute("DROP TABLE segments;")
+#     cursor.execute("DROP TABLE segment_text;")
+#     cursor.execute("DROP TABLE segment_image;")
+#     cursor.execute("DROP TABLE segment_audio;")
 
 # TODO: hashing
 def secure_password(username: str , password: str) -> str:
@@ -191,6 +192,7 @@ def secure_password(username: str , password: str) -> str:
 
 # SQL query wrapper that returns false on an integrity error
 def integrity_query(query: str, values: tuple) -> bool:
+    """Executes a query and returns false if it violates constraints like uniqueness."""
     try:
         cursor.execute(query, values)
         connection.commit()
@@ -203,6 +205,7 @@ def integrity_query(query: str, values: tuple) -> bool:
 # By default, SQLite starts IDs at 1, so a value of 0 is FALSE.
 # TODO: Change the way passwords are stored and/or validated
 def add_user(username, password) -> int:
+    """Adds a user to the database. Returns the new user ID."""
     result = integrity_query('''
                              INSERT INTO users (username, username_case, password)
                              VALUES (?, ?, ?)
@@ -211,6 +214,7 @@ def add_user(username, password) -> int:
 
 # Returns the new sequence ID
 def add_sequence(user_id, sequence_name) -> int:
+    """Adds a sequence to the database. Returns the new sequence ID."""
     result = integrity_query('''
                              INSERT INTO sequences (user_id, sequence_name)
                              VALUES (?, ?)
@@ -220,6 +224,7 @@ def add_sequence(user_id, sequence_name) -> int:
 # Modifies key if already exists
 # Returns true if successful
 def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
+    """Adds an API key to the database. Returns true if successful."""
     result = integrity_query('''
                              INSERT INTO api_keys (user_id, key_type, key_str)
                              VALUES (?, ?, ?)
@@ -234,6 +239,7 @@ def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
 # Function appropriately increases indices >= insertion index
 # Returns new segment ID
 def add_segment(sequence_id, sequence_index = None) -> int:
+    """Adds a segment to the sequence at the specified index. Returns the new segment ID."""
     max_index = get_segment_count(sequence_id)
     if sequence_index is None:
         sequence_index = max_index
@@ -257,17 +263,18 @@ def add_segment(sequence_id, sequence_index = None) -> int:
                              ''', (sequence_id, sequence_index))
     return_id = cursor.lastrowid if result and cursor.lastrowid else 0
     return return_id
-    
+
 
 # Setting "switch" to true will automatically select this new version in the segment.
 # Returns the version assigned.
 def add_segment_element(segment_id: int, element: Element, content: str, switch: bool = False) -> int:
     pass
- 
+
 ### Modify functions
 
 # Returns true if successful
 def change_username(user_id, new_username) -> bool:
+    """Changes the username of a user. Returns True if successful."""
     cursor.execute('''
                    UPDATE users
                    SET username = ?, username_case = ?
@@ -278,6 +285,7 @@ def change_username(user_id, new_username) -> bool:
 
 # Returns true if successful
 def change_sequence_name(sequence_id, new_sequence_name) -> bool:
+    """Changes the name of a sequence. Returns True if successful."""
     cursor.execute('''
                    UPDATE sequences
                    SET sequence_name = ?
@@ -294,7 +302,9 @@ def change_sequence_name(sequence_id, new_sequence_name) -> bool:
 #   Increase all indices >= new_index
 #   Set segment index to new_index
 # There is a way to optimize this, but it doesn't sound fun.
-def change_segment_index(segment_id, new_index) -> int:
+def change_segment_index(segment_id, new_index) -> bool:
+    """Moves a segment to a new index. Changes the indices of other segments accordingly. 
+    Returns True if successful."""
     # Get sequence_id because we need it for increasing indices
     result = cursor.execute('''
                             SELECT sequence_id, sequence_index FROM segments
@@ -302,7 +312,7 @@ def change_segment_index(segment_id, new_index) -> int:
                             ''', (segment_id,))
     row = result.fetchone()
     if row is None:
-        return -1
+        return False
     sequence_id = row.sequence_id
     old_index = row.sequence_index
     
@@ -336,7 +346,7 @@ def change_segment_index(segment_id, new_index) -> int:
                             WHERE id = ?
                             ''', (new_index, segment_id))
     connection.commit()
-    return new_index
+    return bool(cursor.rowcount)
 
 # Does not check if the version exists.
 def change_segment_element_version(segment_id: int, element: Element, version: int) -> bool:
@@ -351,6 +361,7 @@ def change_segment_element_version(segment_id: int, element: Element, version: i
 ### Get functions
 # All get functions will return None if the entry doesn't exist.
 def get_id_from_username(username: str) -> int | None:
+    """Returns the user ID of the given username."""
     result = cursor.execute('''
                             SELECT id FROM users
                             WHERE username = ?;
@@ -359,6 +370,7 @@ def get_id_from_username(username: str) -> int | None:
     return row[0] if row is not None else None
 
 def get_username_from_id(user_id: int) -> str | None:
+    """Returns the username of the given user ID."""
     result = cursor.execute('''
                             SELECT username_case FROM users
                             WHERE id = ?;
@@ -366,15 +378,18 @@ def get_username_from_id(user_id: int) -> str | None:
     row = result.fetchone()
     return row[0] if row is not None else None
 
-def get_api_key(user_id: int, type: str) -> str | None:
+def get_api_key(user_id: int, key_type: str) -> str | None:
+    """Returns the API key of the given type belonging to the user.
+    Current types are 'openai' and 'elevenlabs'."""
     result = cursor.execute('''
                             SELECT key_str FROM api_keys
                             WHERE user_id = ? AND key_type = ?;
-                            ''', (user_id, type))
+                            ''', (user_id, key_type))
     row = result.fetchone()
     return row[0] if row is not None else None
 
 def get_sequences(user_id: int) -> list[Sequence]:
+    """Returns a list of Sequence objects belonging to the user."""
     result = cursor.execute('''
                             SELECT * FROM sequence
                             WHERE user_id = ?;
@@ -384,6 +399,7 @@ def get_sequences(user_id: int) -> list[Sequence]:
     
 
 def get_sequence(sequence_id: int) -> Sequence | None:
+    """Returns a Sequence object with the given id."""
     result = cursor.execute('''
                             SELECT * FROM sequence
                             WHERE id = ?;
@@ -394,6 +410,7 @@ def get_sequence(sequence_id: int) -> Sequence | None:
     return Sequence(row.id, row.user_id, row.name, row.script)
 
 def get_segment(segment_id: int) -> Segment | None:
+    """Returns a Segment object with the given id."""
     result = cursor.execute('''
                             SELECT * FROM segments
                             WHERE id = ?;
@@ -406,6 +423,7 @@ def get_segment(segment_id: int) -> Segment | None:
     return segment
 
 def get_segment_from_index(sequence_id: int, sequence_index: int) -> Segment | None:
+    """Returns the segment at the index in a sequence."""
     result = cursor.execute('''
                             SELECT * FROM segments
                             WHERE sequence_id = ?
@@ -420,6 +438,8 @@ def get_segment_from_index(sequence_id: int, sequence_index: int) -> Segment | N
 
 # If version is unspecified, the function will return the version specified by the segment.
 def get_segment_element(segment_id: int, element: Element, version: int = 0) -> str | None:
+    """Returns the content of a segment element.
+    If version is unspecified, the function will return the version specified by the segment."""
     if version == 0:
         # If version is unspecified, get the version specified in segment.{element}_version
         result = cursor.execute(f'''
@@ -441,6 +461,7 @@ def get_segment_element(segment_id: int, element: Element, version: int = 0) -> 
     return row[0] if row is not None else None
 
 def get_segment_count(sequence_id: int) -> int:
+    """Returns the number of segments in a sequence."""
     result = cursor.execute('''
                             SELECT COUNT(*) FROM segments
                             WHERE sequence_id = ?;
@@ -449,6 +470,7 @@ def get_segment_count(sequence_id: int) -> int:
     return result.fetchone()[0]
     
 def get_segment_element_version_count(segment_id: int, element: Element) -> int:
+    """Returns the number of versions of a segment element."""
     result = cursor.execute(f'''
                             SELECT COUNT(*) FROM segment_{element}
                             WHERE segment_id = ?;
