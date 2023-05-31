@@ -103,7 +103,12 @@ class Segment:
     text_version: int
     image_version: int
     audio_version: int
-    
+
+from enum import Enum
+class Element(Enum):
+    TEXT = "text"
+    IMAGE = "image"
+    AUDIO = "audio"
 
 
 # Initialize the database file
@@ -181,11 +186,7 @@ def secure_password(username: str , password: str) -> str:
 #                        ''', (user_id,))
 #     return ret.fetchall()
 
-from enum import Enum
-class Element(Enum):
-    TEXT = "text"
-    IMAGE = "image"
-    AUDIO = "audio"
+
 
 def get_segment_element(element: Element, sequence_id: int, sequence_index: int, version: int = -1):
     if version == -1:
@@ -250,11 +251,10 @@ def add_api_key(user_id: int, key_type: str, key_str: str) -> bool:
                              ''', (user_id, key_type, key_str))
     return result
 
-# If index < 0, segment is added to the beginning of the sequence
-# If index > max, segment is added to the end of the sequence
-# All versions start at 0, meaning NO version.
-# Function will ++ all >= indices to insert.
-# sequence_index unspecified will add to the end of the sequence.
+# sequence_index outside [0, length] will be put on the closest extreme.
+# Unspecified index == length
+# All element versions start at 0, meaning NO version.
+# Function appropriately increases indices >= insertion index
 # Returns new segment ID
 def add_segment(sequence_id, sequence_index = None) -> int:
     max_index = get_segment_count(sequence_id)
@@ -328,7 +328,7 @@ def get_sequences(user_id: int) -> list[Sequence]:
                             WHERE user_id = ?;
                             ''', (user_id,))
     rows = result.fetchall()
-    return [Sequence(t.id, t.user_id, t.name, t.script) for t in rows]
+    return [Sequence(row.id, row.user_id, row.name, row.script) for row in rows]
     
 
 def get_sequence(sequence_id: int) -> Sequence | None:
@@ -336,24 +336,41 @@ def get_sequence(sequence_id: int) -> Sequence | None:
                             SELECT * FROM sequence
                             WHERE id = ?;
                             ''', (sequence_id,))
-    t = result.fetchone()
-    if t is None: return None
-    sequence = Sequence(t.id, t.user_id, t.name, t.script)
-    return sequence
+    row = result.fetchone()
+    if row is None: return None
+    return Sequence(row.id, row.user_id, row.name, row.script)
 
 def get_segment(segment_id: int) -> Segment | None:
     result = cursor.execute('''
                             SELECT * FROM segments
                             WHERE id = ?;
                             ''', (segment_id,))
-    t = result.fetchone()
-    if t is None: return None
-    segment = Segment(t.id, t.sequence_id, t.sequence_index,
-                      t.text_version, t.image_version, t.audio_version)
+    row = result.fetchone()
+    if row is None: return None
+    segment = Segment(row.id, row.sequence_id, row.sequence_index,
+                      row.text_version, row.image_version, row.audio_version)
     return segment
 
-def get_segment_element(segment_id: int, element: Element, version: int = -1) -> str:
-    pass
+def get_segment_element(segment_id: int, element: Element, version: int = 0) -> str | None:
+    if version == 0:
+        # Max version
+        result = cursor.execute(f'''
+                                SELECT MAX(version) FROM segment_{element}
+                                WHERE segment_id = ?;
+                                ''')
+        max_version = result.fetchone() # row object
+        if max_version is None: 
+            return None
+        version = max_version[0]    # row object -> int from aggregate function
+    result = cursor.execute(f'''
+                            SELECT content FROM segment_{element}
+                            WHERE segment_id = ?
+                                AND version = ?;
+                            ''', (segment_id, version))
+    row = result.fetchone()
+    if row is None: 
+        return None
+    return row[0]
 
 def get_segment_count(sequence_id: int) -> int:
     result = cursor.execute('''
