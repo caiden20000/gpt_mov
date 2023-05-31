@@ -242,7 +242,7 @@ def add_segment(sequence_id, sequence_index = None) -> int:
             sequence_index = max_index
         elif sequence_index <= 0:
             sequence_index = 0
-    if sequence_index == max_index:
+    if sequence_index != max_index:
         # Increase the indices of other segments before inserting
         cursor.execute('''
                        UPDATE segments
@@ -273,8 +273,50 @@ def change_username(user_id) -> bool:
 def change_sequence_name(sequence_id) -> bool:
     pass
 
+# Moves a segment to a new index
 # Returns the new index, or -1 if unsucessful
+# algorithm:
+#   Set segment index to -1
+#   Set all indices >= old_index --
+#   Increase all indices >= new_index
+#   Set segment index to new_index
+# There is a way to optimize this, but it doesn't sound fun.
 def change_segment_index(segment_id, new_index) -> int:
+    # Get sequence_id because we need it for increasing indices
+    result = cursor.execute('''
+                            SELECT sequence_id, sequence_index FROM segments
+                            WHERE id = ?;
+                            ''', (segment_id,))
+    row = result.fetchone()
+    if row is None:
+        return -1
+    sequence_id = row.sequence_id
+    old_index = row.sequence_index
+    
+    # Set index to -1
+    result = cursor.execute('''
+                            UPDATE segments
+                            SET sequence_index = -1
+                            WHERE id = ?;
+                            ''', (segment_id,))
+    
+    # Decrease all indices above old_index
+    # Leaves indices above new_index unchanged
+    cursor.execute('''
+                   UPDATE segments
+                   SET sequence_index = sequence_index - 1
+                   WHERE sequence_id = ?
+                       AND sequence_index >= ?;
+                   ''', (sequence_id, old_index))
+    
+    # Increase the indices of other segments before inserting
+    cursor.execute('''
+                   UPDATE segments
+                   SET sequence_index = sequence_index + 1
+                   WHERE sequence_id = ?
+                       AND sequence_index >= ?;
+                   ''', (sequence_id, new_index))
+    # Insert
     result = cursor.execute('''
                             UPDATE segments
                             SET sequence_index = ?
