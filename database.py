@@ -313,14 +313,30 @@ def change_segment_element_version(segment_id: int, element: Element, version: i
     pass
 
 ### Get functions
-# All get functions will return false if the entry doesn't exist.
-def get_id_from_username(username: str) -> int | bool:
-    pass
-def get_username_from_id(user_id: int) -> str | bool:
-    pass
+# All get functions will return None if the entry doesn't exist.
+def get_id_from_username(username: str) -> int | None:
+    result = cursor.execute('''
+                            SELECT id FROM users
+                            WHERE username = ?;
+                            ''', (username.lower(),))
+    row = result.fetchone()
+    return row[0] if row is not None else None
 
-def get_api_key(user_id: int, type: str) -> str | bool:
-    pass
+def get_username_from_id(user_id: int) -> str | None:
+    result = cursor.execute('''
+                            SELECT username_case FROM users
+                            WHERE id = ?;
+                            ''', (user_id,))
+    row = result.fetchone()
+    return row[0] if row is not None else None
+
+def get_api_key(user_id: int, type: str) -> str | None:
+    result = cursor.execute('''
+                            SELECT key_str FROM api_keys
+                            WHERE user_id = ? AND key_type = ?;
+                            ''', (user_id, type))
+    row = result.fetchone()
+    return row[0] if row is not None else None
 
 def get_sequences(user_id: int) -> list[Sequence]:
     result = cursor.execute('''
@@ -337,7 +353,8 @@ def get_sequence(sequence_id: int) -> Sequence | None:
                             WHERE id = ?;
                             ''', (sequence_id,))
     row = result.fetchone()
-    if row is None: return None
+    if row is None: 
+        return None
     return Sequence(row.id, row.user_id, row.name, row.script)
 
 def get_segment(segment_id: int) -> Segment | None:
@@ -346,7 +363,8 @@ def get_segment(segment_id: int) -> Segment | None:
                             WHERE id = ?;
                             ''', (segment_id,))
     row = result.fetchone()
-    if row is None: return None
+    if row is None: 
+        return None
     segment = Segment(row.id, row.sequence_id, row.sequence_index,
                       row.text_version, row.image_version, row.audio_version)
     return segment
@@ -368,18 +386,15 @@ def get_segment_element(segment_id: int, element: Element, version: int = 0) -> 
                                 AND version = ?;
                             ''', (segment_id, version))
     row = result.fetchone()
-    if row is None: 
-        return None
-    return row[0]
+    return row[0] if row is not None else None
 
 def get_segment_count(sequence_id: int) -> int:
     result = cursor.execute('''
                             SELECT COUNT(*) FROM segments
                             WHERE sequence_id = ?;
-                            ''')
-    return result.fetchall()[0][0]
-    
-    
+                            ''', (sequence_id,))
+    # Usually check for row == None, but aggregate function should guarantee return.
+    return result.fetchone()[0]
     
 def get_segment_element_version_count(segment_id: int, element: Element) -> int:
     pass
