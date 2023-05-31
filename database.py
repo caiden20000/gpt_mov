@@ -187,30 +187,6 @@ def secure_password(username: str , password: str) -> str:
 #     return ret.fetchall()
 
 
-
-def get_segment_element(element: Element, sequence_id: int, sequence_index: int, version: int = -1):
-    if version == -1:
-        # If version is unspecified, get the version specified in segment.{element}_version
-        ret = cursor.execute(f'''
-                        SELECT content FROM sequence_{element}
-                        INNER JOIN segments
-                            ON segment_id = segments.id
-                        WHERE sequence_id = ? 
-                            AND sequence_index = ?
-                            AND version = {element}_version;
-                        ''', (sequence_id, sequence_index))
-    else:
-        ret = cursor.execute(f'''
-                        SELECT content FROM sequence_{element}
-                        INNER JOIN segments
-                            ON segment_id = segments.id
-                        WHERE sequence_id = ? 
-                            AND sequence_index = ?
-                            AND version = ?;
-                        ''', (sequence_id, sequence_index, version))
-    return ret.fetchall()[0][0]
-
-
 ### Add functions
 
 # SQL query wrapper that returns false on an integrity error
@@ -219,6 +195,7 @@ def integrity_query(query: str, values: tuple) -> bool:
         cursor.execute(query, values)
         connection.commit()
     except sqlite3.IntegrityError:
+        connection.rollback()
         return False
     return True
 
@@ -369,23 +346,25 @@ def get_segment(segment_id: int) -> Segment | None:
                       row.text_version, row.image_version, row.audio_version)
     return segment
 
+# If version is unspecified, the function will return the version specified by the segment.
 def get_segment_element(segment_id: int, element: Element, version: int = 0) -> str | None:
     if version == 0:
-        # Max version
-        # result = cursor.execute(f'''
-        #                         SELECT MAX(version) FROM segment_{element}
-        #                         WHERE segment_id = ?;
-        #                         ''')
-        # max_version = result.fetchone() # row object
-        # if max_version is None: 
-        #     return None
-        # version = max_version[0]    # row object -> int from aggregate function
-        version = get_segment_element_version_count(segment_id, element)
-    result = cursor.execute(f'''
-                            SELECT content FROM segment_{element}
-                            WHERE segment_id = ?
-                                AND version = ?;
-                            ''', (segment_id, version))
+        # If version is unspecified, get the version specified in segment.{element}_version
+        result = cursor.execute(f'''
+                        SELECT content FROM sequence_{element}
+                        INNER JOIN segments
+                            ON segment_id = segments.id
+                        WHERE segment_id = ? 
+                            AND version = {element}_version;
+                        ''', (segment_id,))
+    else:
+        result = cursor.execute(f'''
+                        SELECT content FROM sequence_{element}
+                        INNER JOIN segments
+                            ON segment_id = segments.id
+                        WHERE segment_id = ? 
+                            AND version = ?;
+                        ''', (segment_id, version))
     row = result.fetchone()
     return row[0] if row is not None else None
 
