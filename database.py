@@ -274,7 +274,7 @@ def change_username(user_id, new_username) -> bool:
                    WHERE id = ?;
                    ''', (new_username.lower(), new_username, user_id))
     connection.commit()
-    return True if cursor.rowcount else False
+    return bool(cursor.rowcount)
 
 # Returns true if successful
 def change_sequence_name(sequence_id, new_sequence_name) -> bool:
@@ -284,7 +284,7 @@ def change_sequence_name(sequence_id, new_sequence_name) -> bool:
                    WHERE id = ?;
                    ''', (new_sequence_name, sequence_id))
     connection.commit()
-    return True if cursor.rowcount else False
+    return bool(cursor.rowcount)
 
 # Moves a segment to a new index
 # Returns the new index, or -1 if unsucessful
@@ -337,12 +337,16 @@ def change_segment_index(segment_id, new_index) -> int:
                             ''', (new_index, segment_id))
     connection.commit()
     return new_index
-    
-        
-    
 
+# Does not check if the version exists.
 def change_segment_element_version(segment_id: int, element: Element, version: int) -> bool:
-    pass
+    """Changes the active version of a segment element. Returns true if successful."""
+    cursor.execute(f'''
+                   UPDATE segments
+                   SET {element}_version = ?
+                   WHERE segment_id = ?;
+                   ''', (version, segment_id))
+    return bool(cursor.rowcount)
 
 ### Get functions
 # All get functions will return None if the entry doesn't exist.
@@ -395,7 +399,20 @@ def get_segment(segment_id: int) -> Segment | None:
                             WHERE id = ?;
                             ''', (segment_id,))
     row = result.fetchone()
-    if row is None: 
+    if row is None:
+        return None
+    segment = Segment(row.id, row.sequence_id, row.sequence_index,
+                      row.text_version, row.image_version, row.audio_version)
+    return segment
+
+def get_segment_from_index(sequence_id: int, sequence_index: int) -> Segment | None:
+    result = cursor.execute('''
+                            SELECT * FROM segments
+                            WHERE sequence_id = ?
+                                AND sequence_index = ?;
+                            ''', (sequence_id, sequence_index))
+    row = result.fetchone()
+    if row is None:
         return None
     segment = Segment(row.id, row.sequence_id, row.sequence_index,
                       row.text_version, row.image_version, row.audio_version)
@@ -443,18 +460,69 @@ def get_segment_element_version_count(segment_id: int, element: Element) -> int:
 # Existential functions
 
 def does_username_exist(username: str) -> bool:
-    pass
+    """Returns true if the username exists in the database. Case insensitive."""
+    result = cursor.execute('''
+                            SELECT id FROM users
+                            WHERE username = ?;
+                            ''', (username.lower(),))
+    return bool(result.fetchone())
+
 def does_user_id_exist(user_id: int) -> bool:
-    pass
-def does_sequence_name_exist(user_id, sequence_name: str) -> bool:
-    pass
+    """Returns true if the user id exists in the database."""
+    result = cursor.execute('''
+                            SELECT id FROM users
+                            WHERE id = ?;
+                            ''', (user_id,))
+    return bool(result.fetchone())
+
+def does_sequence_name_exist(sequence_name: str, user_id: int = 0) -> bool:
+    """Returns true if the sequence name exists in the database. Case insensitive."""
+    if user_id == 0:
+        result = cursor.execute('''
+                                SELECT id FROM sequences
+                                WHERE sequence_name = ?;
+                                ''', (sequence_name.lower(),))
+    else:
+        result = cursor.execute('''
+                                SELECT id FROM sequences
+                                WHERE sequence_name = ?
+                                    AND user_id = ?;
+                                ''', (sequence_name.lower(), user_id))
+    return bool(result.fetchone())
+
 def does_sequence_id_exist(sequence_id: int) -> bool:
-    pass
+    """Returns true if the sequence id exists in the database."""
+    result = cursor.execute('''
+                            SELECT id FROM sequences
+                            WHERE id = ?;
+                            ''', (sequence_id,))
+    return bool(result.fetchone())
+
 def does_segment_id_exist(segment_id: int) -> bool:
-    pass
+    """Returns true if the segment id exists in the database."""
+    result = cursor.execute('''
+                            SELECT id FROM segments
+                            WHERE id = ?;
+                            ''', (segment_id,))
+    return bool(result.fetchone())
+
 def does_sequence_index_exist(sequence_id: int, sequence_index: int) -> bool:
-    pass
-def does_segment_element_version_exist(sequence_id: int, element: Element, version: int) -> bool:
-    pass
+    """Returns true if a segment exists at the given sequence index."""
+    result = cursor.execute('''
+                            SELECT id FROM segments
+                            WHERE sequence_id = ?
+                                AND sequence_index = ?;
+                            ''', (sequence_id, sequence_index))
+    return bool(result.fetchone())
+
+def does_segment_element_version_exist(segment_id: int, element: Element, version: int) -> bool:
+    """Returns true if a segment element exists with the specified version.
+    Segment element versions begin at 1."""
+    result = cursor.execute(f'''
+                            SELECT id FROM segment_{element}
+                            WHERE segment_id = ?
+                                AND version = ?;
+                            ''', (segment_id, version))
+    return bool(result.fetchone())
 
 init_database()
