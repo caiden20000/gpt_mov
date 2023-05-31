@@ -372,14 +372,15 @@ def get_segment(segment_id: int) -> Segment | None:
 def get_segment_element(segment_id: int, element: Element, version: int = 0) -> str | None:
     if version == 0:
         # Max version
-        result = cursor.execute(f'''
-                                SELECT MAX(version) FROM segment_{element}
-                                WHERE segment_id = ?;
-                                ''')
-        max_version = result.fetchone() # row object
-        if max_version is None: 
-            return None
-        version = max_version[0]    # row object -> int from aggregate function
+        # result = cursor.execute(f'''
+        #                         SELECT MAX(version) FROM segment_{element}
+        #                         WHERE segment_id = ?;
+        #                         ''')
+        # max_version = result.fetchone() # row object
+        # if max_version is None: 
+        #     return None
+        # version = max_version[0]    # row object -> int from aggregate function
+        version = get_segment_element_version_count(segment_id, element)
     result = cursor.execute(f'''
                             SELECT content FROM segment_{element}
                             WHERE segment_id = ?
@@ -397,7 +398,11 @@ def get_segment_count(sequence_id: int) -> int:
     return result.fetchone()[0]
     
 def get_segment_element_version_count(segment_id: int, element: Element) -> int:
-    pass
+    result = cursor.execute(f'''
+                            SELECT COUNT(*) FROM segment_{element}
+                            WHERE segment_id = ?;
+                            ''', (segment_id,))
+    return result.fetchone()[0]
 
 
 
