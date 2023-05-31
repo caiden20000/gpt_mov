@@ -273,6 +273,7 @@ def change_username(user_id, new_username) -> bool:
                    SET username = ?, username_case = ?
                    WHERE id = ?;
                    ''', (new_username.lower(), new_username, user_id))
+    connection.commit()
     return True if cursor.rowcount else False
 
 # Returns true if successful
@@ -282,6 +283,7 @@ def change_sequence_name(sequence_id, new_sequence_name) -> bool:
                    SET sequence_name = ?
                    WHERE id = ?;
                    ''', (new_sequence_name, sequence_id))
+    connection.commit()
     return True if cursor.rowcount else False
 
 # Moves a segment to a new index
