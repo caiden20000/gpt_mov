@@ -267,11 +267,22 @@ def add_segment_element(segment_id: int, element: Element, content: str, switch:
 ### Modify functions
 
 # Returns true if successful
-def change_username(user_id) -> bool:
-    pass
+def change_username(user_id, new_username) -> bool:
+    cursor.execute('''
+                   UPDATE users
+                   SET username = ?, username_case = ?
+                   WHERE id = ?;
+                   ''', (new_username.lower(), new_username, user_id))
+    return True if cursor.rowcount else False
+
 # Returns true if successful
-def change_sequence_name(sequence_id) -> bool:
-    pass
+def change_sequence_name(sequence_id, new_sequence_name) -> bool:
+    cursor.execute('''
+                   UPDATE sequences
+                   SET sequence_name = ?
+                   WHERE id = ?;
+                   ''', (new_sequence_name, sequence_id))
+    return True if cursor.rowcount else False
 
 # Moves a segment to a new index
 # Returns the new index, or -1 if unsucessful
