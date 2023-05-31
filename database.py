@@ -278,6 +278,7 @@ def add_segment(sequence_id, sequence_index = None) -> int:
                              INSERT INTO segments (sequence_id, sequence_index)
                              VALUES (?, ?);
                              ''', (sequence_id, sequence_index))
+    connection.commit()
     return_id = cursor.lastrowid if result and cursor.lastrowid else 0
     return return_id
     
