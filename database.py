@@ -200,8 +200,8 @@ def change_segment_index(segment_id, new_index) -> bool:
     row = result.fetchone()
     if row is None:
         return False
-    sequence_id = row.sequence_id
-    old_index = row.sequence_index
+    sequence_id = row['sequence_id']
+    old_index = row['sequence_index']
     
     # Set index to -1
     result = cursor.execute('''
@@ -241,7 +241,7 @@ def change_segment_element_version(segment_id: int, element: Element, version: i
     cursor.execute(f'''
                    UPDATE segments
                    SET {element.value}_version = ?
-                   WHERE segment_id = ?;
+                   WHERE id = ?;
                    ''', (version, segment_id))
     return bool(cursor.rowcount)
 
@@ -278,23 +278,23 @@ def get_api_key(user_id: int, key_type: str) -> str | None:
 def get_sequences(user_id: int) -> list[Sequence]:
     """Returns a list of Sequence objects belonging to the user."""
     result = cursor.execute('''
-                            SELECT * FROM sequence
+                            SELECT * FROM sequences
                             WHERE user_id = ?;
                             ''', (user_id,))
     rows = result.fetchall()
-    return [Sequence(row.id, row.user_id, row.name, row.script) for row in rows]
+    return [Sequence(row['id'], row['user_id'], row['name'], row['script']) for row in rows]
     
 
 def get_sequence(sequence_id: int) -> Sequence | None:
     """Returns a Sequence object with the given id."""
     result = cursor.execute('''
-                            SELECT * FROM sequence
+                            SELECT * FROM sequences
                             WHERE id = ?;
                             ''', (sequence_id,))
     row = result.fetchone()
     if row is None: 
         return None
-    return Sequence(row.id, row.user_id, row.name, row.script)
+    return Sequence(row['id'], row['user_id'], row['sequence_name'], row['script'])
 
 def get_segment(segment_id: int) -> Segment | None:
     """Returns a Segment object with the given id."""
@@ -305,9 +305,22 @@ def get_segment(segment_id: int) -> Segment | None:
     row = result.fetchone()
     if row is None:
         return None
-    segment = Segment(row.id, row.sequence_id, row.sequence_index,
-                      row.text_version, row.image_version, row.audio_version)
+    segment = Segment(row['id'], row['sequence_id'], row['sequence_index'],
+                      row['text_version'], row['image_version'], row['audio_version'])
     return segment
+
+def get_segments(sequence_id: int) -> list[Segment] | None:
+    """Returns a list of Segment objects in a sequence in index order."""
+    result = cursor.execute('''
+                            SELECT * from segments
+                            WHERE sequence_id = ?
+                            ORDER BY sequence_index;
+                            ''', (sequence_id,))
+    segments = []
+    for row in result.fetchall():
+        segments.append(Segment(row['id'], row['sequence_id'], row['sequence_index'],
+                      row['text_version'], row['image_version'], row['audio_version']))
+    return segments
 
 def get_segment_from_index(sequence_id: int, sequence_index: int) -> Segment | None:
     """Returns the segment at the index in a sequence."""
@@ -319,8 +332,8 @@ def get_segment_from_index(sequence_id: int, sequence_index: int) -> Segment | N
     row = result.fetchone()
     if row is None:
         return None
-    segment = Segment(row.id, row.sequence_id, row.sequence_index,
-                      row.text_version, row.image_version, row.audio_version)
+    segment = Segment(row['id'], row['sequence_id'], row['sequence_index'],
+                      row['text_version'], row['image_version'], row['audio_version'])
     return segment
 
 # If version is unspecified, the function will return the version specified by the segment.
