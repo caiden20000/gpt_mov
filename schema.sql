@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS segments (
 	sequence_index INTEGER NOT NULL,			-- index in the sequence
 	text_version INTEGER DEFAULT 0,
 	image_version INTEGER DEFAULT 0,
-	audio_version INTEGER DEFAULT 0,
-	UNIQUE(sequence_id, sequence_index)		-- A sequence is linear, indices must be unique.
+	audio_version INTEGER DEFAULT 0--,
+	-- UNIQUE(sequence_id, sequence_index)		-- A sequence is linear, indices must be unique.
 );
 
 CREATE TABLE IF NOT EXISTS segment_text (
