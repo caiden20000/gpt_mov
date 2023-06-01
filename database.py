@@ -1,5 +1,10 @@
-'''
+"""
+Module for interfacing with the database schema outlined in schema.sql
+"""
 
+
+
+''' Just a note for myself:
 -- Generate the script for a sequence automatically:
 -- Boy I hope this would work!
 SELECT GROUP_CONCAT(content, ' ')
@@ -9,8 +14,6 @@ INNER JOIN segments
 WHERE sequence_id = <?>
     AND version = text_version
 ORDER BY sequence_index;
-
-
 '''
 
 
