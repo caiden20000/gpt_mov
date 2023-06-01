@@ -6,15 +6,11 @@ fake = Faker()
 def generate_user():
     return database.add_user(fake.user_name(), fake.password(length=12))
 
-def generate_api_key(username, key_type):
-    user_id = database.get_id_from_username(username)
-    if user_id is None: 
-        return
+def generate_api_key(user_id, key_type):
     key_str = fake.lexify(text='????????????????????')
     return database.add_api_key(user_id, key_type, key_str)
 
-def generate_empty_sequence(username):
-    user_id = database.get_id_from_username(username)
+def generate_empty_sequence(user_id):
     sequence_name = ' '.join(fake.words(nb=2))
     return database.add_sequence(user_id, sequence_name)
 
@@ -30,7 +26,7 @@ def generate_segment_image(segment_id):
                                         fake.file_path(depth=3, category='image'), True)
     
 def generate_segment_audio(segment_id):
-    return database.add_segment_element(segment_id, database.Element.IMAGE, 
+    return database.add_segment_element(segment_id, database.Element.AUDIO, 
                                         fake.file_path(depth=3, category='audio'), True)
 
 def generate_segment(sequence_id, versions = 1):
@@ -41,9 +37,42 @@ def generate_segment(sequence_id, versions = 1):
         generate_segment_audio(segment_id)
     return segment_id
 
-def generate_sequence(username, length = 5):
-    sequence_id = generate_empty_sequence(username)
+def generate_sequence(user_id, length = 5, ver_count = 1):
+    sequence_id = generate_empty_sequence(user_id)
     for i in range(length):
-        generate_segment(sequence_id)
+        generate_segment(sequence_id, ver_count)
     return sequence_id
 
+def generate_user_with_sequences(seq_count = 2, seq_len = 5, ver_count = 1):
+    user_id = generate_user()
+    for i in range(seq_count):
+        generate_sequence(user_id, seq_len, ver_count)
+    return user_id
+
+
+
+# Ad-hoc population
+def populate():
+    for i in range(10):
+        user_id = generate_user_with_sequences(5, 8, 4)
+        generate_api_key(user_id, 'openai')
+        generate_api_key(user_id, 'elevenlabs')
+
+populate()
+
+first_seq = database.get_sequence(1)
+if first_seq is None: exit()
+segments = database.get_segments(first_seq.id)
+if segments is None: exit()
+segid = 0
+for seg in segments:
+    if seg.sequence_index == 3: segid = seg.id
+    print(f'index {seg.sequence_index}\tid {seg.id}')
+    
+print("\nChanging 3 to 5...\n")
+database.change_segment_index(segid, 5)
+
+segments = database.get_segments(first_seq.id)
+if segments is None: exit()
+for seg in segments:
+    print(f'index {seg.sequence_index}\tid {seg.id}')
