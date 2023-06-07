@@ -452,4 +452,17 @@ def does_segment_element_version_exist(segment_id: int, element: Element, versio
                             ''', (segment_id, version))
     return bool(result.fetchone())
 
+def drop_all():
+    """Dangerous function that drops all tables in the database. Do not run in production."""
+    cursor.execute("DROP TABLE IF EXISTS users")
+    cursor.execute("DROP TABLE IF EXISTS api_keys")
+    cursor.execute("DROP TABLE IF EXISTS sequences")
+    cursor.execute("DROP TABLE IF EXISTS segments")
+    cursor.execute("DROP TABLE IF EXISTS segment_text")
+    cursor.execute("DROP TABLE IF EXISTS segment_image")
+    cursor.execute("DROP TABLE IF EXISTS segment_audio")
+
+
+
+
 init_database()
