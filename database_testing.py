@@ -53,26 +53,37 @@ def generate_user_with_sequences(seq_count = 2, seq_len = 5, ver_count = 1):
 
 # Ad-hoc population
 def populate():
+    sequence_count = 5
+    sequence_length = 8
+    version_count = 4
     for i in range(10):
-        user_id = generate_user_with_sequences(5, 8, 4)
+        print(f"Generating user {i} with {sequence_count} sequences...")
+        user_id = generate_user_with_sequences(sequence_count, sequence_length, version_count)
         generate_api_key(user_id, 'openai')
         generate_api_key(user_id, 'elevenlabs')
 
+database.drop_all()
+database.init_database()
 populate()
 
-first_seq = database.get_sequence(1)
-if first_seq is None: exit()
-segments = database.get_segments(first_seq.id)
-if segments is None: exit()
-segid = 0
-for seg in segments:
-    if seg.sequence_index == 3: segid = seg.id
-    print(f'index {seg.sequence_index}\tid {seg.id}')
-    
-print("\nChanging 3 to 5...\n")
-database.change_segment_index(segid, 5)
+# Expected output:
+# 1 2 3 4 5 6 7 8 -> 1 2 3 5 6 4 7 8
+# Works as expected
+def test_change_segment_index(froom, too):
+    """Tests the database function change_segment_index"""
+    first_seq = database.get_sequence(1)
+    if first_seq is None: exit()
+    segments = database.get_segments(first_seq.id)
+    if segments is None: exit()
+    segid = 0
+    for seg in segments:
+        if seg.sequence_index == froom: segid = seg.id
+        print(f'index {seg.sequence_index}\tid {seg.id}')
+        
+    print(f"\nChanging {froom} to {too}...\n")
+    database.change_segment_index(segid, too)
 
-segments = database.get_segments(first_seq.id)
-if segments is None: exit()
-for seg in segments:
-    print(f'index {seg.sequence_index}\tid {seg.id}')
+    segments = database.get_segments(first_seq.id)
+    if segments is None: exit()
+    for seg in segments:
+        print(f'index {seg.sequence_index}\tid {seg.id}')
