@@ -1,7 +1,8 @@
 """
 Module for interfacing with the database schema outlined in schema.sql
 """
-
+import sqlite3
+from dataclasses import dataclass
 
 
 ''' Just a note for myself:
@@ -17,11 +18,11 @@ ORDER BY sequence_index;
 '''
 
 
-import sqlite3
-from dataclasses import dataclass
+
 
 @dataclass
 class Sequence:
+    """Sequence dataclass for storing sequence information."""
     id: int
     user_id: int
     name: str
@@ -29,6 +30,7 @@ class Sequence:
 
 @dataclass
 class Segment:
+    """Segment dataclass for storing segment information."""
     id: int
     sequence_id: int
     sequence_index: int
@@ -41,6 +43,7 @@ from enum import Enum
 # eg Element.TEXT.value
 # Because string casting gives you the enum member name instead...
 class Element(Enum):
+    """Enum for the different types of elements in a segment."""
     TEXT = "text"
     IMAGE = "image"
     AUDIO = "audio"
@@ -55,14 +58,16 @@ cursor = connection.cursor()
 # Executes the schema.sql file
 def init_database():
     """Initializes the database file from schema.sql"""
-    script = None;
-    with open('schema.sql', 'r', ) as file:
+    script = None
+    with open('schema.sql', 'r', encoding='UTF-8') as file:
         script = file.read()
     cursor.executescript(script)
     connection.commit()
 
 # TODO: hashing
 def secure_password(username: str , password: str) -> str:
+    """Future function for hashing passwords."""
+    username = username.lower()
     return password
 
 
