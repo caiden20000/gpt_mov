@@ -78,6 +78,12 @@ async def concurrent_gpt(session, prompt):
     CURRENT_GPT_REQUESTS -= 1
     return result
 
+# Segment class represents a video segment with specific properties.
+# Each segment has 3 elements: Image, Audio, and Text.
+# This represents a portion of video that shows an image whule audio TTS
+# of someone saying the contents of the text plays.
+# This Segment class is built with version control in mind, enabling trying combinations
+# of different versions until the user picks the right one for them.
 class Segment:
     """Represents a video segment.
     Contains multiple versions of image paths, audio paths, and script text.
@@ -86,12 +92,17 @@ class Segment:
     def __init__(self, index, name):
         self.name = name
         self.index = index;
+        # List of element versions. Image and Audio elements are paths to the resources.
+        # Text elements are stored inside the list itself. Should this change?
         self.image_list: list[str] = []
         self.text_list: list[str] = []
         self.audio_list: list[str] = []
+        # Element versions, -1 indicates NO version exists.
+        # Versions start at 0, first version will be in xxxx_list[0]
         self.image_version = -1
         self.text_version = -1
         self.audio_version = -1
+        # The AsyncIO session, used for API requests
         self.session = None
     
     async def init(self, session, text):
@@ -205,6 +216,7 @@ class Segment:
         
 
 class Sequence:
+    """Sequence represents a list of Segments which make up a video."""
     def __init__(self, project_name):
         self.name = project_name
         self.segments: list[Segment] = []
