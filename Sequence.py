@@ -1,22 +1,25 @@
 """This module contains the Sequence class, which can build a video 
 and manage many versions of individual video elements."""
+import json
 import aiohttp
+import moviepy.editor as mov
 import gpt
 import eleven
-import moviepy.editor as mov
 
-import json
+# pylint: disable=W0105 # Useless multiline string
+# pylint: disable=W1514 # Not specifying encoding in open()
+# pylint: disable=W0603 # Global statement
 
-image_path = 'images/'
-audio_path = 'audio/'
-output_path = 'output/'
+IMAGE_PATH = 'images/'
+AUDIO_PATH = 'audio/'
+OUTPUT_PATH = 'output/'
 
-current_eleven_requests = 0 # max 3 concurrent
-max_concurrent_eleven_requests = 3
-current_gpt_requests = 0 # max 10? concurrent
-max_concurrent_gpt_requests = 3
-current_dalle_requests = 0 # max 10? concurrent
-max_concurrent_dalle_requests = 3
+CURRENT_ELEVEN_REQUESTS = 0 # max 3 concurrent
+MAX_CONCURRENT_ELEVEN_REQUESTS = 3
+CURRENT_GPT_REQUESTS = 0 # max 10? concurrent
+MAX_CONCURRENT_GPT_REQUESTS = 3
+CURRENT_DALLE_REQUESTS = 0 # max 10? concurrent
+MAX_CONCURRENT_DALLE_REQUESTS = 3
 
 prompts = {}
 try:
@@ -28,45 +31,58 @@ except json.JSONDecodeError:
     print("JSON parse error: prompts.json")
 
 async def wait_for_eleven_concurrency():
-    while current_eleven_requests >= max_concurrent_eleven_requests:
+    """Async function that returns when more concurrent ElevenLabs TTS API requests are allowed."""
+    while CURRENT_ELEVEN_REQUESTS >= MAX_CONCURRENT_ELEVEN_REQUESTS:
         await asyncio.sleep(1)
     return
 
 async def wait_for_gpt_concurrency():
-    while current_gpt_requests >= max_concurrent_gpt_requests:
+    """Async function that returns when more concurrent OpenAI GPT API requests are allowed."""
+    while CURRENT_GPT_REQUESTS >= MAX_CONCURRENT_GPT_REQUESTS:
         await asyncio.sleep(1)
     return
 
 async def wait_for_dalle_concurrency():
-    while current_dalle_requests >= max_concurrent_dalle_requests:
+    """Async function that returns when more concurrent OpenAI DALL-E API requests are allowed."""
+    while CURRENT_DALLE_REQUESTS >= MAX_CONCURRENT_DALLE_REQUESTS:
         await asyncio.sleep(1)
     return
 
 async def concurrent_tts(session, voiceID, text, filepath):
-    global current_eleven_requests
+    """Sends an async API request to ElevenLabs TTS, and 
+    waits to do so if maximum concurrent calls have been reached."""
+    global CURRENT_ELEVEN_REQUESTS
     await wait_for_eleven_concurrency()
-    current_eleven_requests += 1
+    CURRENT_ELEVEN_REQUESTS += 1
     result = await eleven.async_tts(session, voiceID, text, filepath)
-    current_eleven_requests -= 1
+    CURRENT_ELEVEN_REQUESTS -= 1
     return result
 
 async def concurrent_dalle(session, prompt, filepath):
-    global current_dalle_requests
+    """Sends an async API request to OpenAI DALL-E, and 
+    waits to do so if maximum concurrent calls have been reached."""
+    global CURRENT_DALLE_REQUESTS
     await wait_for_dalle_concurrency()
-    current_dalle_requests += 1
+    CURRENT_DALLE_REQUESTS += 1
     result = await gpt.async_dalle(session, prompt, filepath)
-    current_dalle_requests -= 1
+    CURRENT_DALLE_REQUESTS -= 1
     return result
 
 async def concurrent_gpt(session, prompt):
-    global current_gpt_requests
+    """Sends an async API request to OpenAI GPT, and 
+    waits to do so if maximum concurrent calls have been reached."""
+    global CURRENT_GPT_REQUESTS
     await wait_for_gpt_concurrency()
-    current_gpt_requests += 1
+    CURRENT_GPT_REQUESTS += 1
     result = await gpt.async_gpt(session, prompt)
-    current_gpt_requests -= 1
+    CURRENT_GPT_REQUESTS -= 1
     return result
 
 class Segment:
+    """Represents a video segment.
+    Contains multiple versions of image paths, audio paths, and script text.
+    Has methods to change between versions, generate new ones,
+    and return a snapshot of the current elements versions."""
     def __init__(self, index, name):
         self.name = name
         self.index = index;
@@ -123,7 +139,7 @@ class Segment:
         new_version = len(self.image_list)
         image_prompt = image_prompt or await concurrent_gpt(self.session, prompts['get_image_description'] + self.get_current_text())
         image_prompt = image_prompt or self.get_current_text()
-        image_filepath = await concurrent_dalle(self.session, image_prompt, image_path + self.path(new_version))
+        image_filepath = await concurrent_dalle(self.session, image_prompt, IMAGE_PATH + self.path(new_version))
         if type(image_filepath) == str:
             self.image_list.append(image_filepath)
             self.image_version = new_version
@@ -134,7 +150,7 @@ class Segment:
     async def new_audio(self, audio_prompt=None):
         new_version = len(self.audio_list)
         audio_prompt = audio_prompt or self.get_current_text()
-        audio_filepath = await concurrent_tts(self.session, eleven.voices['Antoni'], audio_prompt, audio_path + self.path(new_version))
+        audio_filepath = await concurrent_tts(self.session, eleven.voices['Antoni'], audio_prompt, AUDIO_PATH + self.path(new_version))
         if type(audio_filepath) == str:
             self.audio_list.append(audio_filepath)
             self.audio_version = new_version
@@ -302,8 +318,8 @@ class Sequence:
             clips.append(video_clip)
             seg_count += 1
         final_clip = mov.concatenate_videoclips(clips, method='compose')
-        final_clip.write_videofile(output_path + filepath + ".mp4")
-        return output_path + filepath + ".mp4"
+        final_clip.write_videofile(OUTPUT_PATH + filepath + ".mp4")
+        return OUTPUT_PATH + filepath + ".mp4"
 
 async def main():
     seq = Sequence("seq-test");

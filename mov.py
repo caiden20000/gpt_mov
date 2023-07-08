@@ -1,10 +1,14 @@
 """This module contains functions to assemble a video file from images and audio."""
-from moviepy.editor import *
+from moviepy.editor import AudioFileClip, ImageClip, \
+    VideoFileClip, CompositeVideoClip, concatenate_videoclips, VideoClip
 
-def add_static_image_to_audio(image_path, audio_path):
+def add_static_image_to_audio(image_path, 
+                              audio_path, 
+                              output_path: str | None = None) -> VideoClip | None:
     """Create and save a video file to `output_path` after 
     combining a static image that is located at `image_path` 
-    with an audio file at `audio_path`"""
+    with an audio file at `audio_path`.
+    If no output path is specified, returns a VideoClip instance."""
     # create the audio clip object
     audio_clip = AudioFileClip(audio_path)
     # create the image clip object
@@ -16,9 +20,12 @@ def add_static_image_to_audio(image_path, audio_path):
     # set the FPS to 1
     video_clip.fps = 5
     # write the resuling video clip
-    # video_clip.write_videofile(output_path)
+    if output_path is not None:
+        video_clip.write_videofile(output_path)
+        return None
     # return video file
-    return video_clip
+    else:
+        return video_clip
 
 # ia_tuple = (image_file_name, audio_file_name)
 def ia_tuple_to_clip(ia_tuple):
