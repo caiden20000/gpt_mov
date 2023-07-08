@@ -4,7 +4,7 @@ Module for interfacing with the database schema outlined in schema.sql
 import sqlite3
 from dataclasses import dataclass
 
-
+# pylint: disable=W0105
 ''' Just a note for myself:
 -- Generate the script for a sequence automatically:
 -- Boy I hope this would work!

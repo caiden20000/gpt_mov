@@ -1,21 +1,34 @@
+"""
+This module contains the necessary functions to interface with the OpenAI's API.
+Specifically, the GPT chat-completion interface, and DALL-E image generation.
+NOTE that DALL-E generations are MUCH MORE EXPENSIVE than chat completions.
+Like, 10 cents per image or something crazy.
+"""
 import requests
 
-gpturl = 'https://api.openai.com/v1/chat/completions'
-dalleurl = 'https://api.openai.com/v1/images/generations'
+# The API key. API key is stored in a text file, not in this repo.
+# You must create the file yourself.
+# Create the file keys/openaikey.txt and paste the API key with no additional content.
 openaikey = ''
 # get key from openaikey.txt
 with open('keys/openaikey.txt', 'r+') as f:
     openaikey = f.readline().strip()
 
+# The API URL for chat completion
+gpturl = 'https://api.openai.com/v1/chat/completions'
+# The API URL for DALL-E image generation
+dalleurl = 'https://api.openai.com/v1/images/generations'
+
+
 models = ["gpt-3.5-turbo", "gpt-4", "gpt-4-32k"]
 use_model = models[0]
 
-# Makes a request to the OpenAI API
-# Uses headers:
-#   Authorization": "Bearer " + openaikey,
-#   "Content-Type": "application/json"
-# Returns a string on success, False on failure
+# TODO: Return None on failure, not a bool false
 def gpt(prompt) -> str | bool:
+    """
+    Makes a request to the OpenAI chat completion API.
+    Returns a string on success, or a False on failure.
+    """
     headers = {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + openaikey}
     request = {
         "model": use_model,
@@ -35,8 +48,12 @@ def gpt(prompt) -> str | bool:
         print('Error: ' + response.text)
         return False
 
-# Returns a string on success, False on failure
+# TODO: Return None on failure, not a bool false
 def download_image(url, filename) -> str | bool:
+    """
+    Downloads an image from a given URL to the given filename.
+    Returns the filename on success, or False on failure.
+    """
     print("Downloading image...")
     response = requests.get(url)
     if response.ok:
@@ -68,7 +85,12 @@ def dalle(prompt: str, filepath) -> str | bool:
         print('Error: ' + response.text)
         return False
 
-# Async versions below
+################################
+##### Async versions below #####
+################################
+# Async versions don't take up the entire thread when waiting for a response.
+# This means we can run concurrent API calls and get content FASTER.
+# As a concequence, we do have to rate limit our calls to a certain calls/min
 
 # Returns a string on success, False on failure
 async def async_gpt(session, prompt) -> str | bool:

@@ -1,3 +1,5 @@
+"""This module contains the Sequence class, which can build a video 
+and manage many versions of individual video elements."""
 import aiohttp
 import gpt
 import eleven

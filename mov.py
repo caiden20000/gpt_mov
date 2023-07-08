@@ -1,10 +1,10 @@
+"""This module contains functions to assemble a video file from images and audio."""
 from moviepy.editor import *
-import moviepy.video.fx.all as vfx
 
 def add_static_image_to_audio(image_path, audio_path):
     """Create and save a video file to `output_path` after 
-    combining a static image that is located in `image_path` 
-    with an audio file in `audio_path`"""
+    combining a static image that is located at `image_path` 
+    with an audio file at `audio_path`"""
     # create the audio clip object
     audio_clip = AudioFileClip(audio_path)
     # create the image clip object
@@ -42,6 +42,7 @@ def overlay_on_bg(clip, bg_num):
     new_clip = CompositeVideoClip([bg, clip.set_position("center")])
     return new_clip.subclip(0, clip.duration)
 
+# TODO
 def overlay_captions(script, clip):
     pass
 

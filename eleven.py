@@ -1,11 +1,18 @@
+"""This module contains the necessary functions to interface with Eleven Labs TTS service."""
 import requests
 
-voicesURL = 'https://api.elevenlabs.io/v1/voices'
-ttsURL = 'https://api.elevenlabs.io/v1/text-to-speech/'
+# The API key. API key is stored in a text file, not in this repo.
+# You must create the file yourself.
+# Create the file keys/elevenkey.txt and paste the API key with no additional content.
 elevenkey = ''
 # get key from elevenkey.txt
 with open('keys/elevenkey.txt', 'r+') as f:
     elevenkey = f.readline().strip()
+
+# The URL for the API call that gets a list of available voices.
+voicesURL = 'https://api.elevenlabs.io/v1/voices'
+# The URL for the API call that generates and returns an audio file from text.
+ttsURL = 'https://api.elevenlabs.io/v1/text-to-speech/'
 
 # Returns a string on success, False on failure
 def request_voice_list() -> str | bool:
@@ -58,7 +65,9 @@ def tts(voiceID, text, filepath) -> str | bool:
 # for voice in voices:
 #     print(f"{voice['voice_id']}: {voice['name']}")
 
-
+# These voices are from my personal API key.
+# They probably won't be the same across different keys.
+# TODO: Implement getting the voice ID from an API call before calling TTS.
 voices = {
     "Rachel": "21m00Tcm4TlvDq8ikWAM",
     "Domi": "AZnzlk1XvdvUeBnXmlld",
@@ -75,11 +84,17 @@ voices = {
 }
 
 def generate_test_list():
+    """Populates the audio folder with short example clips of every voice."""
     for voice in voices.items():
         tts(voice[1], "Hello! This is a test.", "audio/" + voice[0])
 
 
-# Async below
+################################
+##### Async versions below #####
+################################
+# Async versions don't take up the entire thread when waiting for a response.
+# This means we can run concurrent API calls and get content FASTER.
+# As a concequence, we do have to rate limit our calls to a certain calls/min
 
 # Returns a string on success, False on failure
 async def async_request_voice_list(session) -> str | bool:

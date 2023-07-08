@@ -1,3 +1,4 @@
+"""The server that will receive and manage API requests from the client."""
 '''
 Plan:
 Test serving HTML, CSS, and JS

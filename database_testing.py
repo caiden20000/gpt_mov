@@ -1,5 +1,9 @@
-import database
+"""
+This module is used for running test code to see if my database works as intended.
+This is not intended to be interfaced with in production.
+"""
 from faker import Faker
+import database
 
 fake = Faker()
 
