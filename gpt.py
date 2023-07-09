@@ -14,6 +14,7 @@ openaikey = ''
 with open('keys/openaikey.txt', 'r+') as f:
     openaikey = f.readline().strip()
 
+
 # The API URL for chat completion
 gpturl = 'https://api.openai.com/v1/chat/completions'
 # The API URL for DALL-E image generation

@@ -333,12 +333,17 @@ class Sequence:
         final_clip.write_videofile(OUTPUT_PATH + filepath + ".mp4")
         return OUTPUT_PATH + filepath + ".mp4"
 
-async def main():
-    seq = Sequence("seq-test");
+async def sequence_test_generate_video(output_name, topic):
+    """Generates a video from the given topic."""
+    seq = Sequence(output_name);
     await seq.open_session()
-    await seq.generate_sequence_from_subject("lettuce")
-    seq.export_video("seq-test")
+    await seq.generate_sequence_from_subject(topic)
+    seq.export_video(output_name)
     await seq.close_session()
+
+async def main():
+    """Main entry point for async execution. Used for isolated testing."""
+    sequence_test_generate_video("seq-test", "lettuce")
 
 if __name__ == "__main__":
     import asyncio

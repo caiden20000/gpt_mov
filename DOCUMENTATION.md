@@ -24,3 +24,28 @@ Your API keys will be read and used by the program when running. There is NO rat
 ### TODO afterwards
 - Convert prompts.json from string arrays to a formatted string for more customizability.
 - Implement video captions
+
+# File explanations
+
+### Sequence.py
+- Sequence class, represents a complete video, made up of a list of Segments
+- Segment class, represents a video clip, has version control and content generation.
+- Asynchronous concurrent API call support, which should realistically go into its own file 'cause it's so useful.
+This file can singlehandedly generate a video file if you want it to. Go ahead and try it! There's a test function at the bottom. :-)
+
+### database.py
+- Functions to initialize and interface with a local SQLite database. Written to match most of the planned API functions and operations.
+
+### eleven.py
+- Functions to interact with the ElevenLabs API, both synchronous and asynchronous methods are implemented.
+
+### gpt.py
+- Functions to interact with the OpenAI GPT and DALL-E APIs, both synchronous and asynchronous methods are implemented.
+
+### server.py
+- Big TODO
+- Will be the running server (or the running TEST server- it's Flask)
+- Handle API calls as well as serve HTML.
+
+### www/
+- Mockup HTML and CSS for the frontend. It's messy in there right now. I haven't modified it since before I made the decision to go server-client model (previously I wanted a desktop app).
